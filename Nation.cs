@@ -12,7 +12,7 @@ namespace Mapperdom
     public class Nation
     {
         public string Name { get; private set; } = "Rogopia";
-        public uint Manpower { get; private set; } = 0;
+        public uint Manpower { get; private set; } = 0; //Not currently used
         public System.Drawing.Color MainColor { get; private set; } = ColorFromHSL(0, 0.6f, 0.5f);
         public Nation Master { get; private set; } = null;
 
@@ -254,6 +254,7 @@ namespace Mapperdom
 
                 }
 
+        //Recursively fill in surrounding pixels with data until it hits a border of some kind
         private static void FillAroundPixel(ref bool[,] bounds, uint xVal, uint yVal)
         {
             if(!bounds[xVal, yVal])

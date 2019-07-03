@@ -14,8 +14,10 @@ namespace Mapperdom
     public class MapperGame
     {
         private WriteableBitmap baseImage;
+
+        //Null repreresents an unclaimable pixel (ocean)
         private byte?[,] ownershipData; //Determines which nation officially owns a pixel (including puppet states)
-        private byte?[,] occupationData; //Determines which nation officially occupies a pixel (excluding puppet states)
+        private byte?[,] occupationData; //Determines which nation occupies a pixel (excluding puppet states)
 
         public Dictionary<byte, Nation> nations;
         private Random rng;
@@ -91,6 +93,8 @@ namespace Mapperdom
 
         public ImageSource GetCurrentMap()
         {
+
+            //Read base image
             WriteableBitmap newImage = new WriteableBitmap(baseImage.PixelWidth, baseImage.PixelHeight);
             byte[] imageArray = new byte[newImage.PixelHeight * newImage.PixelWidth * 4];
 
@@ -99,12 +103,14 @@ namespace Mapperdom
                 stream.Read(imageArray, 0, imageArray.Length);
             }
 
+
             bool[,] borders = GetBorders();
 
             for (int y = 0; y < baseImage.PixelHeight; y++)
             {
                 for (int x = 0; x < baseImage.PixelWidth; x++)
                 {
+                    //Draw borders between nations (very small for the time being)
                     if(borders[x,y])
                     {
                         imageArray[4 * (y * baseImage.PixelHeight + x)] = 0; // Blue
@@ -143,6 +149,7 @@ namespace Mapperdom
                 }
             }
 
+            //Write pixel array to final image
             using (Stream stream = newImage.PixelBuffer.AsStream())
             {
                 stream.Write(imageArray, 0, imageArray.Length);
@@ -162,6 +169,7 @@ namespace Mapperdom
             Nation.AnnexOccupation(ref ownershipData, ref occupationData, nationId, rng);
         }
 
+        //Get pixels with locations that border other nations (not including the sea)
         public bool[,] GetBorders()
         {
             bool[,] borders = new bool[ownershipData.GetLength(0), ownershipData.GetLength(1)];

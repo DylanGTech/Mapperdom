@@ -23,7 +23,7 @@
         <ListView x:Name="nationsList" Grid.Column="0" Grid.Row="0" SelectionMode="Single">
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="local:Nation">
-                    <Grid Width="240">
+                    <Grid Width="280">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="*"/>
