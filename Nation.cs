@@ -137,6 +137,8 @@ namespace Mapperdom
 
         public static void Expand(ushort range, ref byte?[,] occupierMap, byte ownerId, Random rng, sbyte xFocus = 0, sbyte yFocus = 0)
         {
+            bool[,] bounds = new bool[occupierMap.GetLength(0), occupierMap.GetLength(1)];
+
 
             if (xFocus > 3) xFocus = 3;
             if (xFocus < -3) xFocus = -3;
@@ -146,13 +148,13 @@ namespace Mapperdom
 
             while (range > 0)
             {
-                bool[,] bounds = GetBoundaryPixels(ref occupierMap, ownerId);
+                GetBoundaryPixels(ref occupierMap, ownerId, ref bounds);
 
                 for (int y = 0; y < bounds.GetLength(1); y++)
                 {
                     for (int x = 0; x < bounds.GetLength(0); x++)
                     {
-                        if(occupierMap[x,y] != null && bounds[x,y] == true)
+                        if(occupierMap[x,y].HasValue && bounds[x,y] == true)
                         {
                             if (x > 0 && occupierMap[x - 1, y] != null && (byte)rng.Next(0, 255) % Math.Pow(4 + xFocus, 2) == 0)
                             {
@@ -175,14 +177,12 @@ namespace Mapperdom
 
                     }
                 }
-
                 range--;
             }
         }
 
-        private static bool[,] GetBoundaryPixels(ref byte?[,] occupierMap, byte owner)
+        private static void GetBoundaryPixels(ref byte?[,] occupierMap, byte owner, ref bool[,] bounds)
         {
-            bool[,] bounds = new bool[occupierMap.GetLength(0), occupierMap.GetLength(1)];
 
             for(int y = 0; y <  occupierMap.GetLength(1); y++)
             {
@@ -217,8 +217,6 @@ namespace Mapperdom
                     bounds[x, y] = false;
                 }
             }
-
-            return bounds;
         }
 
 

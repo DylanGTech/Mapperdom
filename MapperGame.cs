@@ -104,7 +104,8 @@ namespace Mapperdom
             }
 
 
-            bool[,] borders = GetBorders();
+            bool[,] borders = new bool[baseImage.PixelWidth, baseImage.PixelHeight];
+            GetBorders(ref borders);
 
             for (int y = 0; y < baseImage.PixelHeight; y++)
             {
@@ -170,10 +171,8 @@ namespace Mapperdom
         }
 
         //Get pixels with locations that border other nations (not including the sea)
-        public bool[,] GetBorders()
+        public void GetBorders(ref bool[,] borders)
         {
-            bool[,] borders = new bool[ownershipData.GetLength(0), ownershipData.GetLength(1)];
-
             for (int y = 0; y < baseImage.PixelHeight; y++)
             {
                 for (int x = 0; x < baseImage.PixelWidth; x++)
@@ -205,7 +204,6 @@ namespace Mapperdom
                     borders[x, y] = false;
 ;                }
             }
-            return borders;
         }
 
     }
