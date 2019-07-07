@@ -137,7 +137,7 @@ namespace Mapperdom
 
         public static void Expand(ushort range, ref byte?[,] occupierMap, byte ownerId, Random rng, sbyte xFocus = 0, sbyte yFocus = 0)
         {
-            bool[,] bounds = new bool[occupierMap.GetLength(0), occupierMap.GetLength(1)];
+            Queue<Point> bounds = new Queue<Point>();
 
 
             if (xFocus > 3) xFocus = 3;
@@ -150,38 +150,36 @@ namespace Mapperdom
             {
                 GetBoundaryPixels(ref occupierMap, ownerId, ref bounds);
 
-                for (int y = 0; y < bounds.GetLength(1); y++)
+                while(bounds.Count > 0)
                 {
-                    for (int x = 0; x < bounds.GetLength(0); x++)
-                    {
-                        if(occupierMap[x,y].HasValue && bounds[x,y] == true)
-                        {
-                            if (x > 0 && occupierMap[x - 1, y] != null && (byte)rng.Next(0, 255) % Math.Pow(4 + xFocus, 2) == 0)
-                            {
-                                occupierMap[x - 1, y] = ownerId;
-                            }
-                            if (x < occupierMap.GetLength(0) - 1 && occupierMap[x + 1, y] != null && (byte)rng.Next(0, 255) % Math.Pow(4 - xFocus, 2) == 0)
-                            {
-                                occupierMap[x + 1, y] = ownerId;
-                            }
+                    Point p = bounds.Dequeue();
 
-                            if (y > 0 && occupierMap[x, y - 1] != null && (byte)rng.Next(0, 255) % Math.Pow(4 + yFocus, 2) == 0)
-                            {
-                                occupierMap[x, y - 1] = ownerId;
-                            }
-                            if (y < occupierMap.GetLength(1) - 1 && occupierMap[x, y + 1] != null && (byte)rng.Next(0, 255) % Math.Pow(4 - yFocus, 2) == 0)
-                            {
-                                occupierMap[x, y + 1] = ownerId;
-                            }
+                    if(occupierMap[p.X, p.Y].HasValue)
+                    {
+                        if (p.X > 0 && occupierMap[p.X - 1, p.Y] != null && (byte)rng.Next(0, 255) % Math.Pow(4 + xFocus, 2) == 0)
+                        {
+                            occupierMap[p.X - 1, p.Y] = ownerId;
+                        }
+                        if (x < occupierMap.GetLength(0) - 1 && occupierMap[p.X + 1, p.Y] != null && (byte)rng.Next(0, 255) % Math.Pow(4 - xFocus, 2) == 0)
+                        {
+                            occupierMap[p.X + 1, p.Y] = ownerId;
                         }
 
+                        if (y > 0 && occupierMap[p.X, p.Y - 1] != null && (byte)rng.Next(0, 255) % Math.Pow(4 + yFocus, 2) == 0)
+                        {
+                            occupierMap[p.X, p.Y - 1] = ownerId;
+                        }
+                        if (y < occupierMap.GetLength(1) - 1 && occupierMap[p.X, p.Y + 1] != null && (byte)rng.Next(0, 255) % Math.Pow(4 - yFocus, 2) == 0)
+                        {
+                            occupierMap[p.X, p.Y + 1] = ownerId;
+                        }
                     }
                 }
                 range--;
             }
         }
 
-        private static void GetBoundaryPixels(ref byte?[,] occupierMap, byte owner, ref bool[,] bounds)
+        private static void GetBoundaryPixels(ref byte?[,] occupierMap, byte owner, ref Queue<Point> bounds)
         {
 
             for(int y = 0; y <  occupierMap.GetLength(1); y++)
@@ -192,23 +190,23 @@ namespace Mapperdom
                     {
                         if(x > 0 && occupierMap[x - 1,y] != owner)
                         {
-                            bounds[x, y] = true;
+                            bounds.Enqueue(new Point(x, y));
                             continue;
                         }
                         if (x < occupierMap.GetLength(0) - 1 && occupierMap[x + 1, y] != owner)
                         {
-                            bounds[x, y] = true;
+                            bounds.Enqueue(new Point(x, y));
                             continue;
                         }
 
                         if (y > 0 && occupierMap[x, y - 1] != owner)
                         {
-                            bounds[x, y] = true;
+                            bounds.Enqueue(new Point(x, y));
                             continue;
                         }
                         if (y < occupierMap.GetLength(1) - 1 && occupierMap[x, y + 1] != owner)
                         {
-                            bounds[x, y] = true;
+                            bounds.Enqueue(new Point(x, y));
                             continue;
                         }
 

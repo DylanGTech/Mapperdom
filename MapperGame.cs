@@ -6,6 +6,7 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
 using System.Threading.Tasks;
 using Windows.UI;
+using System.Drawing;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Imaging;
 
@@ -104,22 +105,12 @@ namespace Mapperdom
             }
 
 
-            bool[,] borders = new bool[baseImage.PixelWidth, baseImage.PixelHeight];
-            GetBorders(ref borders);
+            Queue<Point> borders = new Queue<Point>();
 
             for (int y = 0; y < baseImage.PixelHeight; y++)
             {
                 for (int x = 0; x < baseImage.PixelWidth; x++)
                 {
-                    //Draw borders between nations (very small for the time being)
-                    if(borders[x,y])
-                    {
-                        imageArray[4 * (y * baseImage.PixelHeight + x)] = 0; // Blue
-                        imageArray[4 * (y * baseImage.PixelHeight + x) + 1] = 0;  // Green
-                        imageArray[4 * (y * baseImage.PixelHeight + x) + 2] = 0; // Red
-                        //imageArray[4 * (y * baseImage.PixelHeight + x) + 3] = 0; // Opacity
-                    }
-
                     if (ownershipData[x,y] != null)
                     {
                         Nation officialNation = nations[ownershipData[x,y].Value];
@@ -150,6 +141,17 @@ namespace Mapperdom
                 }
             }
 
+            GetBorders(ref borders);
+            while (borders.Count > 0)
+            {
+                Point p = borders.Dequeue();
+
+                imageArray[4 * (p.Y * baseImage.PixelHeight + p.X)] = 0; // Blue
+                imageArray[4 * (p.Y * baseImage.PixelHeight + p.X) + 1] = 0;  // Green
+                imageArray[4 * (p.Y * baseImage.PixelHeight + p.X) + 2] = 0; // Red
+                //imageArray[4 * (y * baseImage.PixelHeight + x) + 3] = 0; // Opacity
+            }
+
             //Write pixel array to final image
             using (Stream stream = newImage.PixelBuffer.AsStream())
             {
@@ -171,7 +173,7 @@ namespace Mapperdom
         }
 
         //Get pixels with locations that border other nations (not including the sea)
-        public void GetBorders(ref bool[,] borders)
+        public void GetBorders(Queue<Point> borders)
         {
             for (int y = 0; y < baseImage.PixelHeight; y++)
             {
@@ -181,28 +183,27 @@ namespace Mapperdom
                     {
                         if (x > 0 && ownershipData[x - 1, y].HasValue && ownershipData[x - 1, y] != ownershipData[x, y])
                         {
-                            borders[x, y] = true;
+                            borders.Enqueue(new Point(x, y));
                             continue;
                         }
                         if (x < ownershipData.GetLength(0) - 1 && ownershipData[x + 1, y].HasValue && ownershipData[x + 1, y] != ownershipData[x, y])
                         {
-                            borders[x, y] = true;
+                            borders.Enqueue(new Point(x, y));
                             continue;
                         }
 
                         if (y > 0 && ownershipData[x, y - 1].HasValue && ownershipData[x, y - 1] != ownershipData[x, y])
                         {
-                            borders[x, y] = true;
+                            borders.Enqueue(new Point(x, y));
                             continue;
                         }
                         if (y < ownershipData.GetLength(1) - 1 && ownershipData[x, y + 1].HasValue && ownershipData[x, y + 1] != ownershipData[x, y])
                         {
-                            borders[x, y] = true;
+                            borders.Enqueue(new Point(x, y));
                             continue;
                         }
                     }
-                    borders[x, y] = false;
-;                }
+                }
             }
         }
 
