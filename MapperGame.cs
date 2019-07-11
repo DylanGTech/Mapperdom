@@ -19,6 +19,7 @@ namespace Mapperdom
         //Null repreresents an unclaimable pixel (ocean)
         private byte?[,] ownershipData; //Determines which nation officially owns a pixel (including puppet states)
         private byte?[,] occupationData; //Determines which nation occupies a pixel (excluding puppet states)
+        private bool[,] newCapturesData;
 
         public Dictionary<byte, Nation> nations;
         private Random rng;
@@ -41,11 +42,12 @@ namespace Mapperdom
 
             ownershipData = new byte?[baseImage.PixelWidth,baseImage.PixelHeight];
             occupationData = new byte?[baseImage.PixelWidth,baseImage.PixelHeight];
+            newCapturesData = new bool[baseImage.PixelWidth,baseImage.PixelHeight];
             for (int y = 0; y < baseImage.PixelHeight; y++)
             {
                 for (int x = 0; x < baseImage.PixelWidth; x++)
                 {
-
+                    newCapturesData[x,y] = false;
                     //Ocean
                     if (imageArray[4 * (y * baseImage.PixelHeight + x)] == 0x80 //Blue
                         && imageArray[4 * (y * baseImage.PixelHeight + x) + 1] == 0x55 //Green
@@ -71,7 +73,7 @@ namespace Mapperdom
 
             //Default nation
             nations.Add(0, new Nation("Rogopia", Nation.ColorFromHSL(0f, 0.6f, 0.5f)));
-            nations.Add(1, new Nation("Rebels", Nation.ColorFromHSL(240f, 0.6f, 0.5f)));
+            nations.Add(1, new Nation("Rebels", Nation.ColorFromHSL(120f, 0.6f, 0.5f)));
 
 
             Random r = new Random();
@@ -92,9 +94,9 @@ namespace Mapperdom
             }
         }
 
-        public ImageSource GetCurrentMap()
-        {
 
+        public WriteableBitmap GetCurrentMap()
+        {
             //Read base image
             WriteableBitmap newImage = new WriteableBitmap(baseImage.PixelWidth, baseImage.PixelHeight);
             byte[] imageArray = new byte[newImage.PixelHeight * newImage.PixelWidth * 4];
@@ -104,6 +106,20 @@ namespace Mapperdom
                 stream.Read(imageArray, 0, imageArray.Length);
             }
 
+            GetPixelOverlay(ref imageArray);
+
+            //Write pixel array to final image
+            using (Stream stream = newImage.PixelBuffer.AsStream())
+            {
+                stream.Write(imageArray, 0, imageArray.Length);
+            }
+
+            return newImage;
+        }
+
+        public void GetPixelOverlay(ref byte[] imageArray)
+        {
+
 
             Queue<Point> borders = new Queue<Point>();
 
@@ -111,7 +127,7 @@ namespace Mapperdom
             {
                 for (int x = 0; x < baseImage.PixelWidth; x++)
                 {
-                    if (ownershipData[x,y] != null)
+                    if (ownershipData[x,y].HasValue)
                     {
                         Nation officialNation = nations[ownershipData[x,y].Value];
                         Nation occupierNation = nations[occupationData[x,y].Value];
@@ -132,10 +148,21 @@ namespace Mapperdom
                         }
                         else //Nation is occupied by another nation
                         {
-                            imageArray[4 * (y * baseImage.PixelHeight + x)] = occupierNation.OccuppiedColor.B; // Blue
-                            imageArray[4 * (y * baseImage.PixelHeight + x) + 1] = occupierNation.OccuppiedColor.G;  // Green
-                            imageArray[4 * (y * baseImage.PixelHeight + x) + 2] = occupierNation.OccuppiedColor.R; // Red
-                            //imageArray[4 * (y * baseImage.PixelHeight + x) + 3] = 0; // Opacity
+                            if(newCapturesData[x,y]) //Was this the most recent capture?
+                            {
+                                imageArray[4 * (y * baseImage.PixelHeight + x)] = occupierNation.GainColor.B; // Blue
+                                imageArray[4 * (y * baseImage.PixelHeight + x) + 1] = occupierNation.GainColor.G;  // Green
+                                imageArray[4 * (y * baseImage.PixelHeight + x) + 2] = occupierNation.GainColor.R; // Red
+                                //imageArray[4 * (y * baseImage.PixelHeight + x) + 3] = 0; // Opacity
+
+                            }
+                            else
+                            {
+                                imageArray[4 * (y * baseImage.PixelHeight + x)] = occupierNation.OccuppiedColor.B; // Blue
+                                imageArray[4 * (y * baseImage.PixelHeight + x) + 1] = occupierNation.OccuppiedColor.G;  // Green
+                                imageArray[4 * (y * baseImage.PixelHeight + x) + 2] = occupierNation.OccuppiedColor.R; // Red
+                                //imageArray[4 * (y * baseImage.PixelHeight + x) + 3] = 0; // Opacity
+                            }
                         }
                     }
                 }
@@ -152,28 +179,39 @@ namespace Mapperdom
                 //imageArray[4 * (y * baseImage.PixelHeight + x) + 3] = 0; // Opacity
             }
 
-            //Write pixel array to final image
-            using (Stream stream = newImage.PixelBuffer.AsStream())
-            {
-                stream.Write(imageArray, 0, imageArray.Length);
-            }
-
-            return newImage;
         }
 
 
         public void Advance(ushort amount, byte nationId, sbyte xFocus = 0, sbyte yFocus = 0)
         {
-            Nation.Expand(amount, ref occupationData, nationId, rng, xFocus, yFocus);
+            ClearGains();
+            Expand(amount, nationId, xFocus, yFocus);
+            CheckForCollapse();
         }
 
         public void AnnexTerritory(byte nationId)
         {
-            Nation.AnnexOccupation(ref ownershipData, ref occupationData, nationId, rng);
+            AnnexOccupation(nationId);
         }
 
+        public void Surrender(byte nationId)
+        {
+            ClearGains();
+            //TODO: Make nations surrender to those they are warring with, not the first avialable one in the dictionary
+            foreach(byte n in nations.Keys)
+            {
+                if (n != nationId)
+                {
+                    Surrender(nationId, n);
+                    break;
+                }
+
+            }
+        }
+
+
         //Get pixels with locations that border other nations (not including the sea)
-        public void GetBorders(Queue<Point> borders)
+        public void GetBorders(ref Queue<Point> borders)
         {
             for (int y = 0; y < baseImage.PixelHeight; y++)
             {
@@ -207,5 +245,290 @@ namespace Mapperdom
             }
         }
 
+
+        public void Expand(ushort range, byte ownerId, sbyte xFocus = 0, sbyte yFocus = 0, bool navalActivity = true)
+        {
+            Queue<Point> bounds = new Queue<Point>();
+            Queue<Point> nextBounds = new Queue<Point>();
+
+            if (xFocus > 3) xFocus = 3;
+            if (xFocus < -3) xFocus = -3;
+
+            if (yFocus > 3) yFocus = 3;
+            if (yFocus < -3) yFocus = -3;
+
+
+            GetBoundaryPixels(ownerId, ref bounds);
+            while (range > 0)
+            {
+                while (bounds.Count > 0)
+                {
+                    Point p = bounds.Dequeue();
+
+                    if (occupationData[p.X, p.Y].HasValue)
+                    {
+                        byte friendlyNumber = 0; //The number of friendly pixels surrounding it (sea, nation, or allied)
+
+                        if (p.X > 0)
+                        {
+                            if (occupationData[p.X - 1, p.Y] != ownerId && occupationData[p.X - 1, p.Y].HasValue && (byte)rng.Next(0, 255) % Math.Pow(4 + xFocus, 2) == 0)
+                            {
+                                occupationData[p.X - 1, p.Y] = ownerId;
+                                nextBounds.Enqueue(new Point(p.X - 1, p.Y));
+                                newCapturesData[p.X - 1, p.Y] = true;
+                                friendlyNumber++;
+                            }
+                            else if (!occupationData[p.X - 1, p.Y].HasValue || occupationData[p.X - 1, p.Y] == ownerId) friendlyNumber++;
+
+                            if(navalActivity && !occupationData[p.X - 1, p.Y].HasValue && (byte)rng.Next(0, 255) % Math.Pow(4 + xFocus, 2) == 0)
+                            {
+                                AttemptNavalLanding(ownerId, new Point(p.X, p.Y), -1, 0);
+                            }
+                        }
+                        else friendlyNumber++;
+
+                        if (p.X < occupationData.GetLength(0) - 1)
+                        {
+                            if (occupationData[p.X + 1, p.Y] != ownerId && occupationData[p.X + 1, p.Y].HasValue && (byte)rng.Next(0, 255) % Math.Pow(4 - xFocus, 2) == 0)
+                            {
+                                occupationData[p.X + 1, p.Y] = ownerId;
+                                nextBounds.Enqueue(new Point(p.X + 1, p.Y));
+                                newCapturesData[p.X + 1, p.Y] = true;
+                                friendlyNumber++;
+                            }
+                            else if (!occupationData[p.X + 1, p.Y].HasValue || occupationData[p.X + 1, p.Y] == ownerId) friendlyNumber++;
+
+                            if (navalActivity && !occupationData[p.X + 1, p.Y].HasValue && (byte)rng.Next(0, 255) % Math.Pow(4 + xFocus, 2) == 0)
+                            {
+                                AttemptNavalLanding(ownerId, new Point(p.X, p.Y), 1, 0);
+                            }
+                        }
+                        else friendlyNumber++;
+
+
+                        if (p.Y > 0)
+                        {
+                            if (occupationData[p.X, p.Y - 1] != ownerId && occupationData[p.X, p.Y - 1].HasValue && (byte)rng.Next(0, 255) % Math.Pow(4 + yFocus, 2) == 0)
+                            {
+                                occupationData[p.X, p.Y - 1] = ownerId;
+                                nextBounds.Enqueue(new Point(p.X, p.Y - 1));
+                                newCapturesData[p.X, p.Y - 1] = true;
+                                friendlyNumber++;
+                            }
+                            else if (!occupationData[p.X, p.Y - 1].HasValue || occupationData[p.X, p.Y - 1] == ownerId) friendlyNumber++;
+
+                            if (navalActivity && !occupationData[p.X, p.Y - 1].HasValue && (byte)rng.Next(0, 255) % Math.Pow(4 + yFocus, 2) == 0)
+                            {
+                                AttemptNavalLanding(ownerId, new Point(p.X, p.Y), 0, -1);
+                            }
+                        }
+                        else friendlyNumber++;
+
+                        if (p.Y < occupationData.GetLength(1) - 1)
+                        {
+                            if (occupationData[p.X, p.Y + 1] != ownerId && occupationData[p.X, p.Y + 1].HasValue && (byte)rng.Next(0, 255) % Math.Pow(4 - yFocus, 2) == 0)
+                            {
+                                occupationData[p.X, p.Y + 1] = ownerId;
+                                nextBounds.Enqueue(new Point(p.X, p.Y + 1));
+                                newCapturesData[p.X, p.Y + 1] = true;
+                                friendlyNumber++;
+                            }
+                            else if (!occupationData[p.X, p.Y + 1].HasValue || occupationData[p.X, p.Y + 1] == ownerId) friendlyNumber++;
+
+                            if (navalActivity && !occupationData[p.X, p.Y + 1].HasValue && (byte)rng.Next(0, 255) % Math.Pow(4 + yFocus, 2) == 0)
+                            {
+                                AttemptNavalLanding(ownerId, new Point(p.X, p.Y), 0, 1);
+                            }
+                        }
+                        else friendlyNumber++;
+
+                        //If not all pixels are friendly, save this pixel for the next expansion
+                        if (friendlyNumber < 4) nextBounds.Enqueue(p);
+                    }
+                }
+                range--;
+                bounds = nextBounds;
+                nextBounds = new Queue<Point>();
+            }
+        }
+        public void Surrender(byte destroyedNationId, byte destroyerNationId)
+        {
+            for (int y = 0; y < occupationData.GetLength(1); y++)
+            {
+                for (int x = 0; x < occupationData.GetLength(0); x++)
+                {
+                    if (occupationData[x, y] == destroyedNationId)
+                    {
+                        occupationData[x, y] = destroyerNationId;
+                        newCapturesData[x, y] = true;
+                    }
+                }
+            }
+        }
+
+
+        public void CheckForCollapse()
+        {
+            List<byte> nationsToKeep = new List<byte>();
+            List<byte> nationsToRemove = new List<byte>();
+
+            for (int y = 0; y < ownershipData.GetLength(1); y++)
+            {
+                for (int x = 0; x < ownershipData.GetLength(0); x++)
+                {
+                    if (ownershipData[x, y].HasValue && !nationsToKeep.Contains(ownershipData[x, y].Value))
+                        nationsToKeep.Add(ownershipData[x, y].Value);
+                    if (occupationData[x, y].HasValue && !nationsToKeep.Contains(occupationData[x, y].Value))
+                        nationsToKeep.Add(occupationData[x, y].Value);
+                }
+            }
+
+            foreach (KeyValuePair<byte, Nation> pair in nations)
+            {
+                if (!nationsToKeep.Contains(pair.Key)) nationsToRemove.Add(pair.Key);
+            }
+
+
+            foreach (byte id in nationsToRemove)
+            {
+                nations.Remove(id);
+                Collapse(id, nations.Keys.First()); //TODO: Check for warring nations and surrender it to the enemy
+            }
+        }
+
+        public void Collapse(byte destroyedNationId, byte destroyerNationId)
+        {
+            for (int y = 0; y < occupationData.GetLength(1); y++)
+            {
+                for (int x = 0; x < occupationData.GetLength(0); x++)
+                {
+                    if (occupationData[x, y] == destroyedNationId)
+                    {
+                        occupationData[x, y] = destroyedNationId;
+                        newCapturesData[x, y] = true;
+                    }
+                    if (ownershipData[x, y] == destroyedNationId)
+                        ownershipData[x, y] = destroyerNationId;
+                }
+            }
+        }
+
+        private void ClearGains()
+        {
+            for (int y = 0; y < newCapturesData.GetLength(1); y++)
+            {
+                for (int x = 0; x < newCapturesData.GetLength(0); x++)
+                {
+                    newCapturesData[x, y] = false;
+                }
+            }
+        }
+
+        private void GetBoundaryPixels(byte owner, ref Queue<Point> bounds)
+        {
+            for (int y = 0; y < occupationData.GetLength(1); y++)
+            {
+                for (int x = 0; x < occupationData.GetLength(0); x++)
+                {
+                    if (occupationData[x, y] != null && occupationData[x, y].Value == owner)
+                    {
+                        if (x > 0 && occupationData[x - 1, y] != owner)
+                        {
+                            bounds.Enqueue(new Point(x, y));
+                            continue;
+                        }
+                        if (x < occupationData.GetLength(0) - 1 && occupationData[x + 1, y] != owner)
+                        {
+                            bounds.Enqueue(new Point(x, y));
+                            continue;
+                        }
+
+                        if (y > 0 && occupationData[x, y - 1] != owner)
+                        {
+                            bounds.Enqueue(new Point(x, y));
+                            continue;
+                        }
+                        if (y < occupationData.GetLength(1) - 1 && occupationData[x, y + 1] != owner)
+                        {
+                            bounds.Enqueue(new Point(x, y));
+                            continue;
+                        }
+
+                    }
+                }
+            }
+        }
+
+
+        private void AttemptNavalLanding(byte conquerer, Point p, sbyte xDir, sbyte yDir)
+        {
+            if (xDir > 1) xDir = 1;
+            else if (xDir < -1) xDir = -1;
+            if (yDir > 1) yDir = 1;
+            else if (yDir < -1) yDir = -1;
+
+
+            while (p.X > 0 && p.Y > 0 && p.X < occupationData.GetLength(0) - 1 && p.Y < occupationData.GetLength(1) - 1)
+            {
+                p.X += xDir;
+                p.Y += yDir;
+
+                if (occupationData[p.X, p.Y].HasValue)
+                {
+                    occupationData[p.X, p.Y] = conquerer;
+                    break;
+                }
+            }
+        }
+
+
+        public void AnnexOccupation(byte ownerId)
+        {
+            /*
+            bool[,] bounds = GetBoundaryPixels(ref occupationData, ownerId);
+            uint xVal;
+            uint yVal;
+
+            do
+            {
+                xVal = (uint)rng.Next(0, bounds.GetLength(0));
+                yVal = (uint)rng.Next(0, bounds.GetLength(1));
+            }
+            while (!(occupationData[xVal, yVal] == ownerId && !bounds[xVal, yVal]));
+
+            FillAroundPixel(ref bounds, xVal, yVal);
+            */
+
+
+            for (int y = 0; y < occupationData.GetLength(1); y++)
+            {
+                for (int x = 0; x < occupationData.GetLength(0); x++)
+                {
+
+                    //if (bounds[x, y])
+                    if (occupationData[x, y] == ownerId)
+                        ownershipData[x, y] = ownerId;
+                }
+            }
+
+        }
+
+        //Recursively fill in surrounding pixels with data until it hits a border of some kind
+        private void FillAroundPixel(ref bool[,] bounds, uint xVal, uint yVal)
+        {
+            if (!bounds[xVal, yVal])
+            {
+                bounds[xVal, yVal] = true;
+                if (xVal > 0)
+                    FillAroundPixel(ref bounds, xVal - 1, yVal);
+                if (xVal < bounds.GetLength(0))
+                    FillAroundPixel(ref bounds, xVal + 1, yVal);
+
+                if (yVal > 0)
+                    FillAroundPixel(ref bounds, xVal, yVal - 1);
+                if (yVal < bounds.GetLength(1))
+                    FillAroundPixel(ref bounds, xVal, yVal + 1);
+            }
+        }
     }
 }

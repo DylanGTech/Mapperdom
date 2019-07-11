@@ -20,40 +20,22 @@
             <ColumnDefinition Width="2*" MinWidth="480"/>
         </Grid.ColumnDefinitions>
 
-        <ListView x:Name="nationsList" Grid.Column="0" Grid.Row="0" SelectionMode="Single">
-            <ListView.ItemTemplate>
-                <DataTemplate x:DataType="local:Nation">
-                    <Grid Width="280">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Text="{x:Bind Name}" Grid.Column="0"/>
-                        <Border Width="128" Height="48" Grid.Column="1">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <Rectangle Grid.Column="0" Fill="{x:Bind MainBrush}"/>
-                                <Rectangle Grid.Column="1" Fill="{x:Bind PuppetBrush}"/>
-                                <Rectangle Grid.Column="2" Fill="{x:Bind OccuppiedBrush}"/>
-                                <Rectangle Grid.Column="3" Fill="{x:Bind GainBrush}"/>
-                            </Grid>
-                        </Border>
-                    </Grid>
-                </DataTemplate>
-            </ListView.ItemTemplate>
-        </ListView>
-
-            <Image x:Name="mapImage" Grid.Row="1" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-        <Grid Grid.Row="1" Grid.Column="1">
+        <Image x:Name="mapImage" Grid.Row="1" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Image.ContextFlyout>
+                <MenuFlyout>
+                    <MenuFlyoutItem Text="Save Frame" Click="SaveImageButton_Click">
+                        <MenuFlyoutItem.Icon>
+                            <SymbolIcon Symbol="Save"/>
+                        </MenuFlyoutItem.Icon>
+                    </MenuFlyoutItem>
+                </MenuFlyout>
+            </Image.ContextFlyout>
+        </Image>
+        <ScrollViewer Grid.Row="1" Grid.Column="1" HorizontalScrollBarVisibility="Disabled">
             <StackPanel>
                 <Button x:Name="newGameButton" HorizontalAlignment="Center" Content="New Game" Click="NewGameButton_Click"/>
 
-                <Slider x:Name="advanceForceSlider" Minimum="0" Maximum="50" Value="10" Header="Advancing Force" Width="256"/>
+                <Slider x:Name="advanceForceSlider" IsEnabled="False" Minimum="0" Maximum="60" Value="10" Header="Advancing Force" Width="256"/>
 
                 <TextBlock Text="Direction" HorizontalAlignment="Center"/>
                 <Grid Width="200" Height="200">
@@ -77,13 +59,43 @@
                     <Button x:Name="attackSouthWest" Tag="SW" Grid.Row="2" Grid.Column="0" IsEnabled="False" HorizontalAlignment="Stretch" Content="SW" Click="TakeTurnButton_Click" VerticalAlignment="Stretch"/>
                     <Button x:Name="attackSouth" Tag="S" Grid.Row="2" Grid.Column="1" IsEnabled="False" HorizontalAlignment="Stretch" Content="S" Click="TakeTurnButton_Click" VerticalAlignment="Stretch"/>
                     <Button x:Name="attackSouthEast" Tag="SE" Grid.Row="2" Grid.Column="2" IsEnabled="False" HorizontalAlignment="Stretch" Content="SE" Click="TakeTurnButton_Click" VerticalAlignment="Stretch"/>
-
                 </Grid>
 
                 <TextBlock Text="Actions" HorizontalAlignment="Center"/>
 
                 <Button x:Name="annexOccupationButton" IsEnabled="False" HorizontalAlignment="Center" Content="Annex Occupation" Click="AnnexOccupationButton_Click"/>
+                <Button x:Name="surrenderButton" IsEnabled="False" HorizontalAlignment="Center" Content="Surrender" Click="SurrenderButton_Click"/>
+                <TextBlock x:Name="messageBlock" VerticalAlignment="Center"/>
+
+
+                <ListView x:Name="nationsList" Grid.Column="0" Grid.Row="0" SelectionMode="Single">
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="local:Nation">
+                            <Grid Width="280">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="{x:Bind Name}" Grid.Column="0"/>
+                                <Border Width="128" Height="48" Grid.Column="1">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Rectangle Grid.Column="0" Fill="{x:Bind MainBrush}"/>
+                                        <Rectangle Grid.Column="1" Fill="{x:Bind PuppetBrush}"/>
+                                        <Rectangle Grid.Column="2" Fill="{x:Bind OccuppiedBrush}"/>
+                                        <Rectangle Grid.Column="3" Fill="{x:Bind GainBrush}"/>
+                                    </Grid>
+                                </Border>
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
             </StackPanel>
-        </Grid>
+        </ScrollViewer>
     </Grid>
 </Page>
