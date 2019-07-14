@@ -45,7 +45,7 @@ namespace Mapperdom
             StorageFile f = await openPicker.PickSingleFileAsync();
 
 
-            //Start new game if slelected
+            //Start new game if selected
             if(f != null)
             {
                 ImageProperties p = await f.Properties.GetImagePropertiesAsync();
@@ -65,26 +65,18 @@ namespace Mapperdom
 
                 mapImage.Source = referencedGame.GetCurrentMap();
 
-                attackNorthWest.IsEnabled = true;
-                attackNorth.IsEnabled = true;
-                attackNorthEast.IsEnabled = true;
-                attackWest.IsEnabled = true;
-                attackNormal.IsEnabled = true;
-                attackEast.IsEnabled = true;
-                attackSouthWest.IsEnabled = true;
-                attackSouth.IsEnabled = true;
-                attackSouthEast.IsEnabled = true;
-
-                advanceForceSlider.IsEnabled = true;
-
-                annexOccupationButton.IsEnabled = true;
-                surrenderButton.IsEnabled = true;
+                saveButton.IsEnabled = true;
+                undoButton.IsEnabled = true;
                 RefreshNations();
+                RefreshButtons();
+                referencedGame.Backup();
             }
+
         }
 
         private void TakeTurnButton_Click(object sender, RoutedEventArgs e)
         {
+            referencedGame.Backup();
             Nation n = (Nation)nationsList.SelectedItem;
 
             switch(((Button)sender).Tag)
@@ -126,10 +118,10 @@ namespace Mapperdom
 
         private void AnnexOccupationButton_Click(object sender, RoutedEventArgs e)
         {
+            referencedGame.Backup();
             Nation n = (Nation)nationsList.SelectedItem;
             referencedGame.AnnexTerritory(referencedGame.nations.Where(pair => pair.Value == n).Single().Key);
             mapImage.Source = referencedGame.GetCurrentMap();
-
         }
 
 
@@ -199,9 +191,76 @@ namespace Mapperdom
 
         private void SurrenderButton_Click(object sender, RoutedEventArgs e)
         {
+            referencedGame.Backup();
             referencedGame.Surrender(referencedGame.nations.Where(pair => pair.Value == (Nation)nationsList.SelectedItem).Single().Key);
             RefreshNations();
             mapImage.Source = referencedGame.GetCurrentMap();
+        }
+
+        private void UndoButton_Click(object sender, RoutedEventArgs e)
+        {
+            referencedGame.SwapBanks();
+            RefreshNations();
+            mapImage.Source = referencedGame.GetCurrentMap();
+        }
+
+
+        private void RefreshButtons()
+        {
+            if (referencedGame != null && nationsList.SelectedItem != null)
+            {
+                Nation selectedNation = (Nation)(nationsList.SelectedItem);
+
+                if (selectedNation.WarSide.HasValue)
+                {
+                    attackNorthWest.IsEnabled = true;
+                    attackNorth.IsEnabled = true;
+                    attackNorthEast.IsEnabled = true;
+                    attackWest.IsEnabled = true;
+                    attackNormal.IsEnabled = true;
+                    attackEast.IsEnabled = true;
+                    attackSouthWest.IsEnabled = true;
+                    attackSouth.IsEnabled = true;
+                    attackSouthEast.IsEnabled = true;
+
+                    advanceForceSlider.IsEnabled = true;
+
+                    annexOccupationButton.IsEnabled = true;
+                    surrenderButton.IsEnabled = true;
+                }
+                rebellionButton.IsEnabled = true;
+            }
+            else
+            {
+                attackNorthWest.IsEnabled = false;
+                attackNorth.IsEnabled = false;
+                attackNorthEast.IsEnabled = false;
+                attackWest.IsEnabled = false;
+                attackNormal.IsEnabled = false;
+                attackEast.IsEnabled = false;
+                attackSouthWest.IsEnabled = false;
+                attackSouth.IsEnabled = false;
+                attackSouthEast.IsEnabled = false;
+
+                advanceForceSlider.IsEnabled = false;
+
+                annexOccupationButton.IsEnabled = false;
+                surrenderButton.IsEnabled = false;
+                rebellionButton.IsEnabled = false;
+            }
+        }
+
+        private void NationsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            RefreshButtons();
+        }
+
+        private void RebellionButton_Click(object sender, RoutedEventArgs e)
+        {
+            referencedGame.Backup();
+            referencedGame.StartUprising(referencedGame.nations.Where(pair => pair.Value == (Nation)nationsList.SelectedItem).Single().Key);
+            mapImage.Source = referencedGame.GetCurrentMap();
+            RefreshNations();
         }
     }
 }

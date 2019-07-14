@@ -131,6 +131,7 @@
     <Compile Include="MapperGame.cs" />
     <Compile Include="Nation.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="WarSide.cs" />
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest">

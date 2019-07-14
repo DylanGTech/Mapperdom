@@ -7,7 +7,6 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
-
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="128"/>
@@ -20,21 +19,32 @@
             <ColumnDefinition Width="2*" MinWidth="480"/>
         </Grid.ColumnDefinitions>
 
-        <Image x:Name="mapImage" Grid.Row="1" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center">
-            <Image.ContextFlyout>
-                <MenuFlyout>
-                    <MenuFlyoutItem Text="Save Frame" Click="SaveImageButton_Click">
-                        <MenuFlyoutItem.Icon>
-                            <SymbolIcon Symbol="Save"/>
-                        </MenuFlyoutItem.Icon>
-                    </MenuFlyoutItem>
-                </MenuFlyout>
-            </Image.ContextFlyout>
-        </Image>
+        <MenuBar Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" VerticalAlignment="Top">
+            <MenuBarItem Title="File">
+                <MenuFlyoutItem Text="New" Click="NewGameButton_Click"  IsEnabled="True">
+                    <MenuFlyoutItem.Icon>
+                        <SymbolIcon Symbol="NewWindow"/>
+                    </MenuFlyoutItem.Icon>
+                </MenuFlyoutItem>
+                <MenuFlyoutItem x:Name="saveButton" Text="Save Frame" Click="SaveImageButton_Click" IsEnabled="False">
+                    <MenuFlyoutItem.Icon>
+                        <SymbolIcon Symbol="Save"/>
+                    </MenuFlyoutItem.Icon>
+                </MenuFlyoutItem>
+            </MenuBarItem>
+            <MenuBarItem Title="Edit">
+                <MenuFlyoutItem x:Name="undoButton" Text="Undo" Click="UndoButton_Click" IsEnabled="False">
+                    <MenuFlyoutItem.Icon>
+                        <SymbolIcon Symbol="Undo"/>
+                    </MenuFlyoutItem.Icon>
+                </MenuFlyoutItem>
+            </MenuBarItem>
+
+        </MenuBar>
+
+        <Image x:Name="mapImage" Grid.Row="1" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center"/>
         <ScrollViewer Grid.Row="1" Grid.Column="1" HorizontalScrollBarVisibility="Disabled">
             <StackPanel>
-                <Button x:Name="newGameButton" HorizontalAlignment="Center" Content="New Game" Click="NewGameButton_Click"/>
-
                 <Slider x:Name="advanceForceSlider" IsEnabled="False" Minimum="0" Maximum="60" Value="10" Header="Advancing Force" Width="256"/>
 
                 <TextBlock Text="Direction" HorizontalAlignment="Center"/>
@@ -65,10 +75,12 @@
 
                 <Button x:Name="annexOccupationButton" IsEnabled="False" HorizontalAlignment="Center" Content="Annex Occupation" Click="AnnexOccupationButton_Click"/>
                 <Button x:Name="surrenderButton" IsEnabled="False" HorizontalAlignment="Center" Content="Surrender" Click="SurrenderButton_Click"/>
+                <Button x:Name="rebellionButton" IsEnabled="False" HorizontalAlignment="Center" Content="Rebellion" Click="RebellionButton_Click"/>
+
                 <TextBlock x:Name="messageBlock" VerticalAlignment="Center"/>
 
 
-                <ListView x:Name="nationsList" Grid.Column="0" Grid.Row="0" SelectionMode="Single">
+                <ListView x:Name="nationsList" Grid.Column="0" Grid.Row="0" SelectionMode="Single" SelectionChanged="NationsList_SelectionChanged">
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="local:Nation">
                             <Grid Width="280">
@@ -77,6 +89,7 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="{x:Bind Name}" Grid.Column="0"/>
+                                <!--
                                 <Border Width="128" Height="48" Grid.Column="1">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
@@ -91,6 +104,7 @@
                                         <Rectangle Grid.Column="3" Fill="{x:Bind GainBrush}"/>
                                     </Grid>
                                 </Border>
+                                -->
                             </Grid>
                         </DataTemplate>
                     </ListView.ItemTemplate>
