@@ -26,14 +26,14 @@
                         <SymbolIcon Symbol="NewWindow"/>
                     </MenuFlyoutItem.Icon>
                 </MenuFlyoutItem>
-                <MenuFlyoutItem x:Name="saveButton" Text="Save Frame" Click="SaveImageButton_Click" IsEnabled="False">
+                <MenuFlyoutItem x:Name="SaveButton" Text="Save Frame" Click="SaveImageButton_Click" IsEnabled="False">
                     <MenuFlyoutItem.Icon>
                         <SymbolIcon Symbol="Save"/>
                     </MenuFlyoutItem.Icon>
                 </MenuFlyoutItem>
             </MenuBarItem>
             <MenuBarItem Title="Edit">
-                <MenuFlyoutItem x:Name="undoButton" Text="Undo" Click="UndoButton_Click" IsEnabled="False">
+                <MenuFlyoutItem x:Name="UndoButton" Text="Undo" Click="UndoButton_Click" IsEnabled="False">
                     <MenuFlyoutItem.Icon>
                         <SymbolIcon Symbol="Undo"/>
                     </MenuFlyoutItem.Icon>
@@ -42,10 +42,10 @@
 
         </MenuBar>
 
-        <Image x:Name="mapImage" Grid.Row="1" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        <Image x:Name="MapImage" Grid.Row="1" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center"/>
         <ScrollViewer Grid.Row="1" Grid.Column="1" HorizontalScrollBarVisibility="Disabled">
             <StackPanel>
-                <Slider x:Name="advanceForceSlider" IsEnabled="False" Minimum="0" Maximum="60" Value="10" Header="Advancing Force" Width="256"/>
+                <Slider x:Name="AdvanceForceSlider" IsEnabled="False" Minimum="0" Maximum="60" Value="10" Header="Advancing Force" Width="256"/>
 
                 <TextBlock Text="Direction" HorizontalAlignment="Center"/>
                 <Grid Width="200" Height="200">
@@ -60,27 +60,27 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <Button x:Name="attackNorthWest" Tag="NW" Grid.Row="0" Grid.Column="0" IsEnabled="False" HorizontalAlignment="Stretch" Content="NW" Click="TakeTurnButton_Click" VerticalAlignment="Stretch"/>
-                    <Button x:Name="attackNorth" Tag="N" Grid.Row="0" Grid.Column="1" IsEnabled="False" HorizontalAlignment="Stretch" Content="N" Click="TakeTurnButton_Click" VerticalAlignment="Stretch"/>
-                    <Button x:Name="attackNorthEast" Tag="NE" Grid.Row="0" Grid.Column="2" IsEnabled="False" HorizontalAlignment="Stretch" Content="NE" Click="TakeTurnButton_Click" VerticalAlignment="Stretch"/>
-                    <Button x:Name="attackWest" Tag="W" Grid.Row="1" Grid.Column="0" IsEnabled="False" HorizontalAlignment="Stretch" Content="W" Click="TakeTurnButton_Click" VerticalAlignment="Stretch"/>
-                    <Button x:Name="attackNormal" Tag="C" Grid.Row="1" Grid.Column="1" IsEnabled="False" HorizontalAlignment="Stretch" Content="Normal" Click="TakeTurnButton_Click" VerticalAlignment="Stretch"/>
-                    <Button x:Name="attackEast" Tag="E" Grid.Row="1" Grid.Column="2" IsEnabled="False" HorizontalAlignment="Stretch" Content="E" Click="TakeTurnButton_Click" VerticalAlignment="Stretch"/>
-                    <Button x:Name="attackSouthWest" Tag="SW" Grid.Row="2" Grid.Column="0" IsEnabled="False" HorizontalAlignment="Stretch" Content="SW" Click="TakeTurnButton_Click" VerticalAlignment="Stretch"/>
-                    <Button x:Name="attackSouth" Tag="S" Grid.Row="2" Grid.Column="1" IsEnabled="False" HorizontalAlignment="Stretch" Content="S" Click="TakeTurnButton_Click" VerticalAlignment="Stretch"/>
-                    <Button x:Name="attackSouthEast" Tag="SE" Grid.Row="2" Grid.Column="2" IsEnabled="False" HorizontalAlignment="Stretch" Content="SE" Click="TakeTurnButton_Click" VerticalAlignment="Stretch"/>
+                    <Button x:Name="AttackNorthWest" Tag="NW" Grid.Row="0" Grid.Column="0" IsEnabled="False" HorizontalAlignment="Stretch" Content="NW" Click="TakeTurnButton_Click" VerticalAlignment="Stretch"/>
+                    <Button x:Name="AttackNorth" Tag="N" Grid.Row="0" Grid.Column="1" IsEnabled="False" HorizontalAlignment="Stretch" Content="N" Click="TakeTurnButton_Click" VerticalAlignment="Stretch"/>
+                    <Button x:Name="AttackNorthEast" Tag="NE" Grid.Row="0" Grid.Column="2" IsEnabled="False" HorizontalAlignment="Stretch" Content="NE" Click="TakeTurnButton_Click" VerticalAlignment="Stretch"/>
+                    <Button x:Name="AttackWest" Tag="W" Grid.Row="1" Grid.Column="0" IsEnabled="False" HorizontalAlignment="Stretch" Content="W" Click="TakeTurnButton_Click" VerticalAlignment="Stretch"/>
+                    <Button x:Name="AttackNormal" Tag="C" Grid.Row="1" Grid.Column="1" IsEnabled="False" HorizontalAlignment="Stretch" Content="Normal" Click="TakeTurnButton_Click" VerticalAlignment="Stretch"/>
+                    <Button x:Name="AttackEast" Tag="E" Grid.Row="1" Grid.Column="2" IsEnabled="False" HorizontalAlignment="Stretch" Content="E" Click="TakeTurnButton_Click" VerticalAlignment="Stretch"/>
+                    <Button x:Name="AttackSouthWest" Tag="SW" Grid.Row="2" Grid.Column="0" IsEnabled="False" HorizontalAlignment="Stretch" Content="SW" Click="TakeTurnButton_Click" VerticalAlignment="Stretch"/>
+                    <Button x:Name="AttackSouth" Tag="S" Grid.Row="2" Grid.Column="1" IsEnabled="False" HorizontalAlignment="Stretch" Content="S" Click="TakeTurnButton_Click" VerticalAlignment="Stretch"/>
+                    <Button x:Name="AttackSouthEast" Tag="SE" Grid.Row="2" Grid.Column="2" IsEnabled="False" HorizontalAlignment="Stretch" Content="SE" Click="TakeTurnButton_Click" VerticalAlignment="Stretch"/>
                 </Grid>
 
                 <TextBlock Text="Actions" HorizontalAlignment="Center"/>
 
-                <Button x:Name="annexOccupationButton" IsEnabled="False" HorizontalAlignment="Center" Content="Annex Occupation" Click="AnnexOccupationButton_Click"/>
-                <Button x:Name="surrenderButton" IsEnabled="False" HorizontalAlignment="Center" Content="Surrender" Click="SurrenderButton_Click"/>
-                <Button x:Name="rebellionButton" IsEnabled="False" HorizontalAlignment="Center" Content="Rebellion" Click="RebellionButton_Click"/>
+                <Button x:Name="AnnexOccupationButton" IsEnabled="False" HorizontalAlignment="Center" Content="Annex Occupation" Click="AnnexOccupationButton_Click"/>
+                <Button x:Name="SurrenderButton" IsEnabled="False" HorizontalAlignment="Center" Content="Surrender" Click="SurrenderButton_Click"/>
+                <Button x:Name="RebellionButton" IsEnabled="False" HorizontalAlignment="Center" Content="Rebellion" Click="RebellionButton_Click"/>
 
-                <TextBlock x:Name="messageBlock" VerticalAlignment="Center"/>
+                <TextBlock x:Name="MessageBlock" VerticalAlignment="Center"/>
 
 
-                <ListView x:Name="nationsList" Grid.Column="0" Grid.Row="0" SelectionMode="Single" SelectionChanged="NationsList_SelectionChanged">
+                <ListView x:Name="NationsList" Grid.Column="0" Grid.Row="0" SelectionMode="Single" SelectionChanged="NationsList_SelectionChanged">
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="local:Nation">
                             <Grid Width="280">

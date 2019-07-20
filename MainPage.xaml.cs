@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
 using Windows.Graphics.Imaging;
 using Windows.Storage;
 using Windows.Storage.FileProperties;
@@ -12,12 +10,7 @@ using Windows.Storage.Pickers;
 using Windows.Storage.Streams;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Controls.Primitives;
-using Windows.UI.Xaml.Data;
-using Windows.UI.Xaml.Input;
-using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Imaging;
-using Windows.UI.Xaml.Navigation;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
 
@@ -26,14 +19,13 @@ namespace Mapperdom
     /// <summary>
     /// An empty page that can be used on its own or navigated to within a Frame.
     /// </summary>
-    public sealed partial class MainPage : Page
+    public sealed partial class MainPage
     {
-        MapperGame referencedGame;
-
+        private MapperGame referencedGame;
 
         public MainPage()
         {
-            this.InitializeComponent();
+            InitializeComponent();
         }
 
         private async void NewGameButton_Click(object sender, RoutedEventArgs e)
@@ -43,7 +35,6 @@ namespace Mapperdom
             openPicker.FileTypeFilter.Add(".png");
 
             StorageFile f = await openPicker.PickSingleFileAsync();
-
 
             //Start new game if selected
             if(f != null)
@@ -57,90 +48,84 @@ namespace Mapperdom
                 {
                     referencedGame = new MapperGame(bmp);
                 }
-                catch(Exception exc)
+                catch(Exception)
                 {
                     //Do nothing (for now)
                     return;
                 }
 
-                mapImage.Source = referencedGame.GetCurrentMap();
+                MapImage.Source = referencedGame.GetCurrentMap();
 
-                saveButton.IsEnabled = true;
-                undoButton.IsEnabled = true;
+                SaveButton.IsEnabled = true;
+                UndoButton.IsEnabled = true;
                 RefreshNations();
                 RefreshButtons();
                 referencedGame.Backup();
             }
-
         }
 
         private void TakeTurnButton_Click(object sender, RoutedEventArgs e)
         {
             referencedGame.Backup();
-            Nation n = (Nation)nationsList.SelectedItem;
+            Nation n = (Nation)NationsList.SelectedItem;
 
             switch(((Button)sender).Tag)
             {
                 case "NW":
-                    referencedGame.Advance((ushort)advanceForceSlider.Value, referencedGame.nations.Where(pair => pair.Value == n).Single().Key, -1, -1);
+                    referencedGame.Advance((ushort)AdvanceForceSlider.Value, referencedGame.Nations.Single(pair => pair.Value == n).Key, -1, -1);
                     break;
                 case "N":
-                    referencedGame.Advance((ushort)advanceForceSlider.Value, referencedGame.nations.Where(pair => pair.Value == n).Single().Key, 0, -2);
+                    referencedGame.Advance((ushort)AdvanceForceSlider.Value, referencedGame.Nations.Single(pair => pair.Value == n).Key, 0, -2);
                     break;
                 case "NE":
-                    referencedGame.Advance((ushort)advanceForceSlider.Value, referencedGame.nations.Where(pair => pair.Value == n).Single().Key, 1, -1);
+                    referencedGame.Advance((ushort)AdvanceForceSlider.Value, referencedGame.Nations.Single(pair => pair.Value == n).Key, 1, -1);
                     break;
                 case "W":
-                    referencedGame.Advance((ushort)advanceForceSlider.Value, referencedGame.nations.Where(pair => pair.Value == n).Single().Key,-2, 0);
+                    referencedGame.Advance((ushort)AdvanceForceSlider.Value, referencedGame.Nations.Single(pair => pair.Value == n).Key,-2, 0);
                     break;
                 case "C":
-                    referencedGame.Advance((ushort)advanceForceSlider.Value, referencedGame.nations.Where(pair => pair.Value == n).Single().Key);
+                    referencedGame.Advance((ushort)AdvanceForceSlider.Value, referencedGame.Nations.Single(pair => pair.Value == n).Key);
                     break;
                 case "E":
-                    referencedGame.Advance((ushort)advanceForceSlider.Value, referencedGame.nations.Where(pair => pair.Value == n).Single().Key, 2, 0);
+                    referencedGame.Advance((ushort)AdvanceForceSlider.Value, referencedGame.Nations.Single(pair => pair.Value == n).Key, 2, 0);
                     break;
                 case "SW":
-                    referencedGame.Advance((ushort)advanceForceSlider.Value, referencedGame.nations.Where(pair => pair.Value == n).Single().Key, -1, 1);
+                    referencedGame.Advance((ushort)AdvanceForceSlider.Value, referencedGame.Nations.Single(pair => pair.Value == n).Key, -1, 1);
                     break;
                 case "S":
-                    referencedGame.Advance((ushort)advanceForceSlider.Value, referencedGame.nations.Where(pair => pair.Value == n).Single().Key, 0, 2);
+                    referencedGame.Advance((ushort)AdvanceForceSlider.Value, referencedGame.Nations.Single(pair => pair.Value == n).Key, 0, 2);
                     break;
                 case "SE":
-                    referencedGame.Advance((ushort)advanceForceSlider.Value, referencedGame.nations.Where(pair => pair.Value == n).Single().Key, 1, 1);
+                    referencedGame.Advance((ushort)AdvanceForceSlider.Value, referencedGame.Nations.Single(pair => pair.Value == n).Key, 1, 1);
                     break;
             }
-
-            mapImage.Source = referencedGame.GetCurrentMap();
-
-
+            
+            MapImage.Source = referencedGame.GetCurrentMap();
             RefreshNations();
         }
 
         private void AnnexOccupationButton_Click(object sender, RoutedEventArgs e)
         {
             referencedGame.Backup();
-            Nation n = (Nation)nationsList.SelectedItem;
-            referencedGame.AnnexTerritory(referencedGame.nations.Where(pair => pair.Value == n).Single().Key);
-            mapImage.Source = referencedGame.GetCurrentMap();
+            Nation n = (Nation)NationsList.SelectedItem;
+            referencedGame.AnnexTerritory(referencedGame.Nations.Single(pair => pair.Value == n).Key);
+            MapImage.Source = referencedGame.GetCurrentMap();
         }
-
 
         //Get the list of nations to display (following an action that may change it in some way)
         private void RefreshNations()
         {
-            Nation n = (Nation)nationsList.SelectedItem;
-
-            nationsList.ItemsSource = referencedGame.nations.Values.ToList();
-
-            if (((List<Nation>)nationsList.ItemsSource).Contains(n))
-                nationsList.SelectedItem = n;
-            else nationsList.SelectedItem = ((List<Nation>)nationsList.ItemsSource).First();
+            Nation n = (Nation)NationsList.SelectedItem;
+            NationsList.ItemsSource = referencedGame.Nations.Values.ToList();
+            NationsList.SelectedItem = ((List<Nation>)NationsList.ItemsSource).Contains(n) ? n : ((List<Nation>)NationsList.ItemsSource).First();
         }
 
         private async void SaveImageButton_Click(object sender, RoutedEventArgs e)
         {
-            FileSavePicker fileSavePicker = new FileSavePicker();
-            fileSavePicker.SuggestedStartLocation = PickerLocationId.PicturesLibrary;
+            FileSavePicker fileSavePicker = new FileSavePicker
+            {
+                SuggestedStartLocation = PickerLocationId.PicturesLibrary
+            };
             fileSavePicker.FileTypeChoices.Add("PNG File", new List<string>() { ".png" });
             fileSavePicker.SuggestedFileName = "image";
 
@@ -192,61 +177,60 @@ namespace Mapperdom
         private void SurrenderButton_Click(object sender, RoutedEventArgs e)
         {
             referencedGame.Backup();
-            referencedGame.Surrender(referencedGame.nations.Where(pair => pair.Value == (Nation)nationsList.SelectedItem).Single().Key);
+            referencedGame.Surrender(referencedGame.Nations.Single(pair => pair.Value == (Nation)NationsList.SelectedItem).Key);
             RefreshNations();
-            mapImage.Source = referencedGame.GetCurrentMap();
+            MapImage.Source = referencedGame.GetCurrentMap();
         }
 
         private void UndoButton_Click(object sender, RoutedEventArgs e)
         {
             referencedGame.SwapBanks();
             RefreshNations();
-            mapImage.Source = referencedGame.GetCurrentMap();
+            MapImage.Source = referencedGame.GetCurrentMap();
         }
-
-
+        
         private void RefreshButtons()
         {
-            if (referencedGame != null && nationsList.SelectedItem != null)
+            if (referencedGame != null && NationsList.SelectedItem != null)
             {
-                Nation selectedNation = (Nation)(nationsList.SelectedItem);
+                Nation selectedNation = (Nation)(NationsList.SelectedItem);
 
                 if (selectedNation.WarSide.HasValue)
                 {
-                    attackNorthWest.IsEnabled = true;
-                    attackNorth.IsEnabled = true;
-                    attackNorthEast.IsEnabled = true;
-                    attackWest.IsEnabled = true;
-                    attackNormal.IsEnabled = true;
-                    attackEast.IsEnabled = true;
-                    attackSouthWest.IsEnabled = true;
-                    attackSouth.IsEnabled = true;
-                    attackSouthEast.IsEnabled = true;
+                    AttackNorthWest.IsEnabled = true;
+                    AttackNorth.IsEnabled = true;
+                    AttackNorthEast.IsEnabled = true;
+                    AttackWest.IsEnabled = true;
+                    AttackNormal.IsEnabled = true;
+                    AttackEast.IsEnabled = true;
+                    AttackSouthWest.IsEnabled = true;
+                    AttackSouth.IsEnabled = true;
+                    AttackSouthEast.IsEnabled = true;
 
-                    advanceForceSlider.IsEnabled = true;
+                    AdvanceForceSlider.IsEnabled = true;
 
-                    annexOccupationButton.IsEnabled = true;
-                    surrenderButton.IsEnabled = true;
+                    AnnexOccupationButton.IsEnabled = true;
+                    SurrenderButton.IsEnabled = true;
                 }
-                rebellionButton.IsEnabled = true;
+                RebellionButton.IsEnabled = true;
             }
             else
             {
-                attackNorthWest.IsEnabled = false;
-                attackNorth.IsEnabled = false;
-                attackNorthEast.IsEnabled = false;
-                attackWest.IsEnabled = false;
-                attackNormal.IsEnabled = false;
-                attackEast.IsEnabled = false;
-                attackSouthWest.IsEnabled = false;
-                attackSouth.IsEnabled = false;
-                attackSouthEast.IsEnabled = false;
+                AttackNorthWest.IsEnabled = false;
+                AttackNorth.IsEnabled = false;
+                AttackNorthEast.IsEnabled = false;
+                AttackWest.IsEnabled = false;
+                AttackNormal.IsEnabled = false;
+                AttackEast.IsEnabled = false;
+                AttackSouthWest.IsEnabled = false;
+                AttackSouth.IsEnabled = false;
+                AttackSouthEast.IsEnabled = false;
 
-                advanceForceSlider.IsEnabled = false;
+                AdvanceForceSlider.IsEnabled = false;
 
-                annexOccupationButton.IsEnabled = false;
-                surrenderButton.IsEnabled = false;
-                rebellionButton.IsEnabled = false;
+                AnnexOccupationButton.IsEnabled = false;
+                SurrenderButton.IsEnabled = false;
+                RebellionButton.IsEnabled = false;
             }
         }
 
@@ -258,8 +242,8 @@ namespace Mapperdom
         private void RebellionButton_Click(object sender, RoutedEventArgs e)
         {
             referencedGame.Backup();
-            referencedGame.StartUprising(referencedGame.nations.Where(pair => pair.Value == (Nation)nationsList.SelectedItem).Single().Key);
-            mapImage.Source = referencedGame.GetCurrentMap();
+            referencedGame.StartUprising(referencedGame.Nations.Single(pair => pair.Value == (Nation)NationsList.SelectedItem).Key);
+            MapImage.Source = referencedGame.GetCurrentMap();
             RefreshNations();
         }
     }

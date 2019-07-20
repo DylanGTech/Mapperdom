@@ -1,19 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Windows.UI.Xaml.Media;
-using Windows.UI;
 
 namespace Mapperdom
 {
     public class Nation
     {
-        public string Name { get; private set; } = "Rogopia";
+        public string Name { get; }
         public System.Drawing.Color MainColor { get; private set; } = System.Drawing.Color.FromArgb(0x0000B33C);
-        public Nation Master { get; private set; } = null;
+        public Nation Master { get; }
 
         public byte? WarSide = null;
 
@@ -23,8 +16,7 @@ namespace Mapperdom
             Master = master;
         }
 
-
-        public static System.Drawing.Color ColorFromHSL(float hue, float saturation, float brightness)
+        public static System.Drawing.Color ColorFromHsl(float hue, float saturation, float brightness)
         {
             if (hue > 360f) hue = 360f;
             else if (hue < 0) hue = 0f;
@@ -41,7 +33,7 @@ namespace Mapperdom
             double g = 0;
             double b = 0;
 
-            switch ((int)(hue / 60))
+            switch ((int) (hue / 60))
             {
                 case 0:
                     r = c;
@@ -75,7 +67,8 @@ namespace Mapperdom
                     break;
             }
 
-            return System.Drawing.Color.FromArgb((byte)((r + m) * 255), (byte)((g + m) * 255), (byte)((b + m) * 255));
+            return System.Drawing.Color.FromArgb((byte) ((r + m) * 255), (byte) ((g + m) * 255),
+                (byte) ((b + m) * 255));
         }
     }
 }
