@@ -10,6 +10,7 @@ namespace Mapperdom
 
         public byte? WarSide = null;
 
+
         public Nation(string name, Nation master = null)
         {
             Name = name;

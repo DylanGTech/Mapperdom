@@ -130,8 +130,8 @@ namespace Mapperdom
                     if (!ownershipData[x, y].HasValue) continue;
                     Nation officialNation = Nations[ownershipData[x, y].Value];
                     Nation occupierNation = Nations[occupationData[x, y].Value];
-
-
+                  
+                  
                     if (!officialNation.WarSide.HasValue || !occupierNation.WarSide.HasValue) continue;
                     WarSide officialSide = Sides[officialNation.WarSide.Value];
                     WarSide occupierSide = Sides[occupierNation.WarSide.Value];
@@ -184,10 +184,10 @@ namespace Mapperdom
             }
         }
 
-        public void Advance(ushort amount, byte nationId, sbyte xFocus = 0, sbyte yFocus = 0)
+        public void Advance(ushort amount, byte nationId, bool includesNavalActivity, sbyte xFocus = 0, sbyte yFocus = 0)
         {
             ClearGains();
-            Expand(amount, nationId, xFocus, yFocus);
+            Expand(amount, nationId, xFocus, yFocus, includesNavalActivity);
             CheckForCollapse();
         }
 

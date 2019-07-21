@@ -18,7 +18,7 @@ namespace Mapperdom
 
         public Brush MainBrush =>
             new SolidColorBrush(Windows.UI.Color.FromArgb(MainColor.A, MainColor.R, MainColor.G, MainColor.B));
-
+      
         public Brush PuppetBrush =>
             new SolidColorBrush(Windows.UI.Color.FromArgb(PuppetColor.A, PuppetColor.R, PuppetColor.G, PuppetColor.B));
 

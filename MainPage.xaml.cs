@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
@@ -22,6 +23,7 @@ namespace Mapperdom
     public sealed partial class MainPage
     {
         private MapperGame referencedGame;
+        public ObservableCollection<MapDisplayEntry> nationEntries = new ObservableCollection<MapDisplayEntry>();
 
         public MainPage()
         {
@@ -53,71 +55,80 @@ namespace Mapperdom
                     //Do nothing (for now)
                     return;
                 }
-
-                MapImage.Source = referencedGame.GetCurrentMap();
-
                 SaveButton.IsEnabled = true;
                 UndoButton.IsEnabled = true;
                 RefreshNations();
                 RefreshButtons();
+                UpdateImage();
                 referencedGame.Backup();
+
             }
         }
 
         private void TakeTurnButton_Click(object sender, RoutedEventArgs e)
         {
             referencedGame.Backup();
-            Nation n = (Nation)NationsList.SelectedItem;
+            Nation n = ((MapDisplayEntry)NationsList.SelectedItem).nation;
 
             switch(((Button)sender).Tag)
             {
                 case "NW":
-                    referencedGame.Advance((ushort)AdvanceForceSlider.Value, referencedGame.Nations.Single(pair => pair.Value == n).Key, -1, -1);
+                    referencedGame.Advance((ushort)AdvanceForceSlider.Value, referencedGame.Nations.Single(pair => pair.Value == n).Key, navalActivityCheckbox.IsChecked.Value, -1, -1);
                     break;
                 case "N":
-                    referencedGame.Advance((ushort)AdvanceForceSlider.Value, referencedGame.Nations.Single(pair => pair.Value == n).Key, 0, -2);
+                    referencedGame.Advance((ushort)AdvanceForceSlider.Value, referencedGame.Nations.Single(pair => pair.Value == n).Key, navalActivityCheckbox.IsChecked.Value, 0, -2);
                     break;
                 case "NE":
-                    referencedGame.Advance((ushort)AdvanceForceSlider.Value, referencedGame.Nations.Single(pair => pair.Value == n).Key, 1, -1);
+                    referencedGame.Advance((ushort)AdvanceForceSlider.Value, referencedGame.Nations.Single(pair => pair.Value == n).Key, navalActivityCheckbox.IsChecked.Value, 1, -1);
                     break;
                 case "W":
-                    referencedGame.Advance((ushort)AdvanceForceSlider.Value, referencedGame.Nations.Single(pair => pair.Value == n).Key,-2, 0);
+                    referencedGame.Advance((ushort)AdvanceForceSlider.Value, referencedGame.Nations.Single(pair => pair.Value == n).Key, navalActivityCheckbox.IsChecked.Value, -2, 0);
                     break;
                 case "C":
-                    referencedGame.Advance((ushort)AdvanceForceSlider.Value, referencedGame.Nations.Single(pair => pair.Value == n).Key);
+                    referencedGame.Advance((ushort)AdvanceForceSlider.Value, referencedGame.Nations.Single(pair => pair.Value == n).Key, navalActivityCheckbox.IsChecked.Value, navalActivityCheckbox.IsChecked.Value,);
                     break;
                 case "E":
-                    referencedGame.Advance((ushort)AdvanceForceSlider.Value, referencedGame.Nations.Single(pair => pair.Value == n).Key, 2, 0);
+                    referencedGame.Advance((ushort)AdvanceForceSlider.Value, referencedGame.Nations.Single(pair => pair.Value == n).Key, navalActivityCheckbox.IsChecked.Value, 2, 0);
                     break;
                 case "SW":
-                    referencedGame.Advance((ushort)AdvanceForceSlider.Value, referencedGame.Nations.Single(pair => pair.Value == n).Key, -1, 1);
+                    referencedGame.Advance((ushort)AdvanceForceSlider.Value, referencedGame.Nations.Single(pair => pair.Value == n).Key, navalActivityCheckbox.IsChecked.Value, -1, 1);
                     break;
                 case "S":
-                    referencedGame.Advance((ushort)AdvanceForceSlider.Value, referencedGame.Nations.Single(pair => pair.Value == n).Key, 0, 2);
+                    referencedGame.Advance((ushort)AdvanceForceSlider.Value, referencedGame.Nations.Single(pair => pair.Value == n).Key, navalActivityCheckbox.IsChecked.Value, 0, 2);
                     break;
                 case "SE":
-                    referencedGame.Advance((ushort)AdvanceForceSlider.Value, referencedGame.Nations.Single(pair => pair.Value == n).Key, 1, 1);
+                    referencedGame.Advance((ushort)AdvanceForceSlider.Value, referencedGame.Nations.Single(pair => pair.Value == n).Key, navalActivityCheckbox.IsChecked.Value, 1, 1);
                     break;
             }
             
-            MapImage.Source = referencedGame.GetCurrentMap();
+            UpdateImage();
             RefreshNations();
         }
 
         private void AnnexOccupationButton_Click(object sender, RoutedEventArgs e)
         {
             referencedGame.Backup();
-            Nation n = (Nation)NationsList.SelectedItem;
+            Nation n = ((MapDisplayEntry)NationsList.SelectedItem).nation;
             referencedGame.AnnexTerritory(referencedGame.Nations.Single(pair => pair.Value == n).Key);
-            MapImage.Source = referencedGame.GetCurrentMap();
+            UpdateImage();
         }
 
         //Get the list of nations to display (following an action that may change it in some way)
         private void RefreshNations()
         {
-            Nation n = (Nation)NationsList.SelectedItem;
-            NationsList.ItemsSource = referencedGame.Nations.Values.ToList();
-            NationsList.SelectedItem = ((List<Nation>)NationsList.ItemsSource).Contains(n) ? n : ((List<Nation>)NationsList.ItemsSource).First();
+            MapDisplayEntry selectedItem = (MapDisplayEntry)NationsList.SelectedItem;
+
+            nationEntries.Clear();
+            foreach (Nation nat in referencedGame.Nations.Values.ToList())
+            {
+                nationEntries.Add(new MapDisplayEntry(nat, nat.WarSide.HasValue ? referencedGame.sides[nat.WarSide.Value] : null));
+            }
+
+
+
+            if (selectedItem != null)
+                NationsList.SelectedItem = ((ObservableCollection<MapDisplayEntry>)NationsList.ItemsSource).FirstOrDefault(e => e.nation == selectedItem.nation);
+            else NationsList.SelectedItem = ((ObservableCollection<MapDisplayEntry>)NationsList.ItemsSource).FirstOrDefault();
         }
 
         private async void SaveImageButton_Click(object sender, RoutedEventArgs e)
@@ -177,40 +188,41 @@ namespace Mapperdom
         private void SurrenderButton_Click(object sender, RoutedEventArgs e)
         {
             referencedGame.Backup();
-            referencedGame.Surrender(referencedGame.Nations.Single(pair => pair.Value == (Nation)NationsList.SelectedItem).Key);
+            referencedGame.Surrender(referencedGame.Nations.Where(pair => pair.Value == ((MapDisplayEntry)NationsList.SelectedItem).nation).Single().Key);
             RefreshNations();
-            MapImage.Source = referencedGame.GetCurrentMap();
+            UpdateImage();
         }
 
         private void UndoButton_Click(object sender, RoutedEventArgs e)
         {
             referencedGame.SwapBanks();
             RefreshNations();
-            MapImage.Source = referencedGame.GetCurrentMap();
+            UpdateImage();
         }
         
         private void RefreshButtons()
         {
             if (referencedGame != null && NationsList.SelectedItem != null)
             {
-                Nation selectedNation = (Nation)(NationsList.SelectedItem);
+                Nation selectedNation = ((MapDisplayEntry)NationsList.SelectedItem).nation;
 
                 if (selectedNation.WarSide.HasValue)
                 {
-                    AttackNorthWest.IsEnabled = true;
-                    AttackNorth.IsEnabled = true;
-                    AttackNorthEast.IsEnabled = true;
-                    AttackWest.IsEnabled = true;
-                    AttackNormal.IsEnabled = true;
-                    AttackEast.IsEnabled = true;
-                    AttackSouthWest.IsEnabled = true;
-                    AttackSouth.IsEnabled = true;
-                    AttackSouthEast.IsEnabled = true;
+                    attackNorthWest.IsEnabled = true;
+                    attackNorth.IsEnabled = true;
+                    attackNorthEast.IsEnabled = true;
+                    attackWest.IsEnabled = true;
+                    attackNormal.IsEnabled = true;
+                    attackEast.IsEnabled = true;
+                    attackSouthWest.IsEnabled = true;
+                    attackSouth.IsEnabled = true;
+                    attackSouthEast.IsEnabled = true;
 
-                    AdvanceForceSlider.IsEnabled = true;
+                    advanceForceSlider.IsEnabled = true;
+                    navalActivityCheckbox.IsEnabled = true;
 
-                    AnnexOccupationButton.IsEnabled = true;
-                    SurrenderButton.IsEnabled = true;
+                    annexOccupationButton.IsEnabled = true;
+                    surrenderButton.IsEnabled = true;
                 }
                 RebellionButton.IsEnabled = true;
             }
@@ -243,8 +255,50 @@ namespace Mapperdom
         {
             referencedGame.Backup();
             referencedGame.StartUprising(referencedGame.Nations.Single(pair => pair.Value == (Nation)NationsList.SelectedItem).Key);
-            MapImage.Source = referencedGame.GetCurrentMap();
+            UpdateImage();
             RefreshNations();
+        }
+
+
+
+        public void UpdateImage()
+        {
+            mapImage.Source = referencedGame.GetCurrentMap();
+            RefreshNations();
+            RefreshButtons();
+        }
+    }
+
+
+    public class MapDisplayEntry
+    {
+        public Nation nation;
+        public string sideName;
+        public Brush mainBrush;
+        public Brush puppetBrush;
+        public Brush occupiedBrush;
+        public Brush gainBrush;
+
+        public MapDisplayEntry(Nation nation, WarSide ws)
+        {
+            this.nation = nation;
+            if(ws != null)
+            {
+                sideName = ws.Name;
+                mainBrush = ws.MainBrush;
+                puppetBrush = ws.PuppetBrush;
+                occupiedBrush = ws.OccupiedBrush;
+                gainBrush = ws.GainBrush;
+            }
+            else
+            {
+                Brush neutralBrush = new SolidColorBrush(Windows.UI.Color.FromArgb(0, 0x00, 0x80, 0x55));
+                sideName = "";
+                mainBrush = neutralBrush;
+                puppetBrush = neutralBrush;
+                occupiedBrush = neutralBrush;
+                gainBrush = neutralBrush;
+            }
         }
     }
 }
