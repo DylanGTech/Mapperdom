@@ -20,7 +20,7 @@ namespace Mapperdom
             }
         }
 
-        public System.Drawing.Color OccuppiedColor
+        public System.Drawing.Color OccupiedColor
         {
             get
             {
@@ -51,11 +51,11 @@ namespace Mapperdom
                 return new SolidColorBrush(Windows.UI.Color.FromArgb(PuppetColor.A, PuppetColor.R, PuppetColor.G, PuppetColor.B));
             }
         }
-        public Windows.UI.Xaml.Media.Brush OccuppiedBrush
+        public Windows.UI.Xaml.Media.Brush OccupiedBrush
         {
             get
             {
-                return new SolidColorBrush(Windows.UI.Color.FromArgb(OccuppiedColor.A, OccuppiedColor.R, OccuppiedColor.G, OccuppiedColor.B));
+                return new SolidColorBrush(Windows.UI.Color.FromArgb(OccupiedColor.A, OccupiedColor.R, OccupiedColor.G, OccupiedColor.B));
             }
         }
         public Windows.UI.Xaml.Media.Brush GainBrush

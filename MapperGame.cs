@@ -167,9 +167,9 @@ namespace Mapperdom
                             }
                             else //Nation is occupied by another nation
                             {
-                                    imageArray[4 * (y * baseImage.PixelHeight + x)] = occupierSide.OccuppiedColor.B; // Blue
-                                    imageArray[4 * (y * baseImage.PixelHeight + x) + 1] = occupierSide.OccuppiedColor.G;  // Green
-                                    imageArray[4 * (y * baseImage.PixelHeight + x) + 2] = occupierSide.OccuppiedColor.R; // Red
+                                    imageArray[4 * (y * baseImage.PixelHeight + x)] = occupierSide.OccupiedColor.B; // Blue
+                                    imageArray[4 * (y * baseImage.PixelHeight + x) + 1] = occupierSide.OccupiedColor.G;  // Green
+                                    imageArray[4 * (y * baseImage.PixelHeight + x) + 2] = occupierSide.OccupiedColor.R; // Red
                                                                                                                            //imageArray[4 * (y * baseImage.PixelHeight + x) + 3] = 0; // Opacity
                             }
                         }
@@ -191,10 +191,10 @@ namespace Mapperdom
         }
 
 
-        public void Advance(ushort amount, byte nationId, sbyte xFocus = 0, sbyte yFocus = 0)
+        public void Advance(ushort amount, byte nationId, bool includesNavalActivity, sbyte xFocus = 0, sbyte yFocus = 0)
         {
             ClearGains();
-            Expand(amount, nationId, xFocus, yFocus);
+            Expand(amount, nationId, xFocus, yFocus, includesNavalActivity);
             CheckForCollapse();
         }
 
@@ -281,7 +281,7 @@ namespace Mapperdom
 
                     if (occupationData[p.X, p.Y].HasValue)
                     {
-                        byte friendlyNumber = 0; //The number of friendly pixels surrounding it (sea, nation, or allied)
+                        byte friendlyNumber = 0;
 
                         if (p.X > 0)
                         {

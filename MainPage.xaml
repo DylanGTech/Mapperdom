@@ -48,15 +48,15 @@
                 <Slider x:Name="advanceForceSlider" IsEnabled="False" Minimum="0" Maximum="60" Value="10" Header="Advancing Force" Width="256"/>
 
                 <TextBlock Text="Direction" HorizontalAlignment="Center"/>
-                <Grid Width="200" Height="200">
+                <Grid Width="150" Height="150">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="2*"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
-                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="2*"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
@@ -70,6 +70,7 @@
                     <Button x:Name="attackSouth" Tag="S" Grid.Row="2" Grid.Column="1" IsEnabled="False" HorizontalAlignment="Stretch" Content="S" Click="TakeTurnButton_Click" VerticalAlignment="Stretch"/>
                     <Button x:Name="attackSouthEast" Tag="SE" Grid.Row="2" Grid.Column="2" IsEnabled="False" HorizontalAlignment="Stretch" Content="SE" Click="TakeTurnButton_Click" VerticalAlignment="Stretch"/>
                 </Grid>
+                <CheckBox x:Name="navalActivityCheckbox" IsEnabled="False" IsChecked="False" Content="Attempt naval landings" HorizontalAlignment="Center"/>
 
                 <TextBlock Text="Actions" HorizontalAlignment="Center"/>
 
@@ -80,17 +81,20 @@
                 <TextBlock x:Name="messageBlock" VerticalAlignment="Center"/>
 
 
-                <ListView x:Name="nationsList" Grid.Column="0" Grid.Row="0" SelectionMode="Single" SelectionChanged="NationsList_SelectionChanged">
+                <ListView x:Name="nationsList" Grid.Column="0" Grid.Row="0" SelectionMode="Single" ItemsSource="{x:Bind nationEntries, Mode=OneWay}" SelectionChanged="NationsList_SelectionChanged">
                     <ListView.ItemTemplate>
-                        <DataTemplate x:DataType="local:Nation">
+                        <DataTemplate x:DataType="local:MapDisplayEntry">
                             <Grid Width="280">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="128"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="{x:Bind Name}" Grid.Column="0"/>
-                                <!--
-                                <Border Width="128" Height="48" Grid.Column="1">
+                                <TextBlock Text="{x:Bind nation.Name}" Grid.Column="0"/>
+
+                                <TextBlock Text="{x:Bind sideName}" Grid.Column="1" FontStyle="Italic" FontSize="8"/>
+
+                                <Border Width="128" Height="48" Grid.Column="2">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
@@ -98,13 +102,13 @@
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
-                                        <Rectangle Grid.Column="0" Fill="{x:Bind MainBrush}"/>
-                                        <Rectangle Grid.Column="1" Fill="{x:Bind PuppetBrush}"/>
-                                        <Rectangle Grid.Column="2" Fill="{x:Bind OccuppiedBrush}"/>
-                                        <Rectangle Grid.Column="3" Fill="{x:Bind GainBrush}"/>
+                                        <Rectangle Grid.Column="0" Fill="{x:Bind mainBrush}"/>
+                                        <Rectangle Grid.Column="1" Fill="{x:Bind puppetBrush}"/>
+                                        <Rectangle Grid.Column="2" Fill="{x:Bind occupiedBrush}"/>
+                                        <Rectangle Grid.Column="3" Fill="{x:Bind gainBrush}"/>
                                     </Grid>
                                 </Border>
-                                -->
+                                
                             </Grid>
                         </DataTemplate>
                     </ListView.ItemTemplate>
