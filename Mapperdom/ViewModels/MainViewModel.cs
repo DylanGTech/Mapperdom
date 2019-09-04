@@ -15,11 +15,23 @@ using Windows.Storage.Pickers;
 using Windows.Storage.Streams;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Imaging;
+using Mapperdom.Services;
+using System.Threading.Tasks;
 
 namespace Mapperdom.ViewModels
 {
     public class MainViewModel : Observable
     {
+
+        public bool CanLoad
+        {
+            get
+            {
+                return SaveService.CanLoad("LastSave");
+            }
+        }
+
+
         private MapperGame _referencedGame;
         public MapperGame ReferencedGame
         {
@@ -106,29 +118,31 @@ namespace Mapperdom.ViewModels
             }
         }
 
-        private bool _navyForcesEnabled;
         public bool NavyForcesEnabled
         {
             get
             {
-                return _navyForcesEnabled;
+                if (SelectedDisplayEntry == null) return false;
+
+                return SelectedDisplayEntry.Nation.plan.navalActivity;
             }
             set
             {
-                Set(ref _navyForcesEnabled, value);
+                Set(ref SelectedDisplayEntry.Nation.plan.navalActivity, value);
             }
         }
 
-        private int _forceStrength;
         public int ForceStrength
         {
             get
             {
-                return _forceStrength;
+                if (SelectedDisplayEntry == null) return 0;
+                return SelectedDisplayEntry.Nation.plan.range;
             }
             set
             {
-                Set(ref _forceStrength, value);
+                if(SelectedDisplayEntry != null)
+                Set(ref SelectedDisplayEntry.Nation.plan.range, (ushort)value);
             }
         }
 
@@ -160,6 +174,8 @@ namespace Mapperdom.ViewModels
             {
                 Set(ref _selectedDisplayEntry, value);
                 OnPropertyChanged("SelectedNationIsAtWar");
+                OnPropertyChanged("NavyForcesEnabled");
+                OnPropertyChanged("ForceStrength");
             }
         }
 
@@ -176,6 +192,55 @@ namespace Mapperdom.ViewModels
             }
         }
 
+        private ICommand _executePlanCommand;
+        public ICommand ExecutePlanCommand
+        {
+            get
+            {
+                if (_executePlanCommand == null)
+                    _executePlanCommand = new RelayCommand(() =>
+                    {
+                        ReferencedGame.Advance();
+                        SourceImage = ReferencedGame.GetCurrentMap();
+                        ReferencedGame.Backup();
+                    });
+
+                return _executePlanCommand;
+            }
+        }
+
+
+
+        private ICommand _saveProjectCommand;
+        public ICommand SaveProjectCommand
+        {
+            get
+            {
+                if (_saveProjectCommand == null)
+                    _saveProjectCommand = new RelayCommand(() =>
+                    {
+                        SaveService.SaveAsync(ReferencedGame, "LastSave");
+                    });
+
+                return _saveProjectCommand;
+            }
+        }
+
+        private ICommand _loadProjectCommand;
+        public ICommand LoadProjectCommand
+        {
+            get
+            {
+                if (_loadProjectCommand == null)
+                    _loadProjectCommand = new RelayCommand(async () =>
+                    {
+                        ReferencedGame = await SaveService.LoadAsync("LastSave");
+                        SourceImage = ReferencedGame.GetCurrentMap();
+                    });
+
+                return _loadProjectCommand;
+            }
+        }
 
         private ICommand _newGameCommand;
         public ICommand NewGameCommand
@@ -216,6 +281,8 @@ namespace Mapperdom.ViewModels
                 return _newGameCommand;
             }
         }
+
+
 
         private ICommand _saveImageCommand;
         public ICommand SaveImageCommand
@@ -330,6 +397,95 @@ namespace Mapperdom.ViewModels
             }
         }
 
+
+        private ICommand _generateNextFrame;
+
+        public ICommand GenerateNextFrame
+        {
+            get
+            {
+                if (_generateNextFrame == null)
+                    _generateNextFrame = new RelayCommand(async () =>
+                    {
+                        ReferencedGame.Backup();
+                        ReferencedGame.Advance();
+                        SourceImage = ReferencedGame.GetCurrentMap();
+                    });
+
+                return _generateNextFrame;
+            }
+        }
+
+        private ICommand _declareWarCommand;
+        public ICommand DeclareWarCommand
+        {
+            get
+            {
+                if (_declareWarCommand == null)
+                    _declareWarCommand = new RelayCommand(async () =>
+                    {
+                        ObservableCollection<Nation> options = new ObservableCollection<Nation>();
+                        foreach (Nation n in ReferencedGame.Nations.Values.ToList())
+                            options.Add(n);
+
+
+                        if (SelectedNationIsAtWar)
+                        {
+                            foreach (Nation n in ReferencedGame.Nations.Values.Where(nat => nat.WarSide != null))
+                                options.Remove(n);
+                            options.Remove(SelectedDisplayEntry.Nation);
+                        }
+
+                        options.Remove(SelectedDisplayEntry.Nation);
+
+                        PickNationDialog d1 = new PickNationDialog(this, options, SelectedDisplayEntry.Nation);
+                        if ((await d1.ShowAsync()) != Windows.UI.Xaml.Controls.ContentDialogResult.Secondary)
+                                return;
+
+                        WarSide n1Side = d1.ViewModel.Nation1.WarSide.HasValue ? ReferencedGame.Sides[d1.ViewModel.Nation1.WarSide.Value] : null;
+                        WarSide n2Side = d1.ViewModel.Nation2.WarSide.HasValue ? ReferencedGame.Sides[d1.ViewModel.Nation2.WarSide.Value] : null;
+
+
+                        if (n1Side == null)
+                        {
+                            ObservableCollection<WarSide> sideOptions = new ObservableCollection<WarSide>(ReferencedGame.Sides.Values);
+                            if (n1Side != null) sideOptions.Remove(n1Side);
+
+                            PickSideDialog d2 = new PickSideDialog(this, options.Count > 0, sideOptions, d1.ViewModel.Nation1);
+                            if ((await d2.ShowAsync()) != Windows.UI.Xaml.Controls.ContentDialogResult.Secondary)
+                                return;
+
+                            if(d2.ViewModel.IsNewWarSide)
+                                n1Side = d2.ViewModel.NewWarSide;
+                            else n1Side = d2.ViewModel.SelectedWarSide;
+                        }
+
+                        if (n2Side == null)
+                        {
+                            ObservableCollection<WarSide> sideOptions = new ObservableCollection<WarSide>(ReferencedGame.Sides.Values);
+                            if (n2Side != null) sideOptions.Remove(n2Side);
+
+                            PickSideDialog d2 = new PickSideDialog(this, options.Count > 0, new ObservableCollection<WarSide>(ReferencedGame.Sides.Values), d1.ViewModel.Nation2);
+                            if ((await d2.ShowAsync()) != Windows.UI.Xaml.Controls.ContentDialogResult.Secondary)
+                                return;
+
+                            if (d2.ViewModel.IsNewWarSide)
+                                n2Side = d2.ViewModel.NewWarSide;
+                            else n2Side = d2.ViewModel.SelectedWarSide;
+                        }
+
+                        ReferencedGame.Backup();
+                        ReferencedGame.DeclareWar(ReferencedGame.Nations.FirstOrDefault(kvp => kvp.Value == d1.ViewModel.Nation1).Key, ReferencedGame.Nations.FirstOrDefault(kvp => kvp.Value == d1.ViewModel.Nation2).Key, n1Side, n2Side);
+
+                        SourceImage = ReferencedGame.GetCurrentMap();
+                    });
+
+                return _declareWarCommand;
+            }
+        }
+
+
+
         private ICommand _startUprisingCommand;
         public ICommand StartUprisingCommand
         {
@@ -343,7 +499,7 @@ namespace Mapperdom.ViewModels
                             ObservableCollection<WarSide> options = new ObservableCollection<WarSide>(ReferencedGame.Sides.Values);
                             options.Remove(ReferencedGame.Sides[SelectedDisplayEntry.Nation.WarSide.Value]);
 
-                            PickSideDialog d1 = new PickSideDialog(this, ReferencedGame.Sides.Count > 0, ReferencedGame.Sides[SelectedDisplayEntry.Nation.WarSide.Value], options, new Nation(SelectedDisplayEntry.Nation.Name + " Rebels"));
+                            PickSideDialog d1 = new PickSideDialog(this, ReferencedGame.Sides.Count > 0, options, new Nation(SelectedDisplayEntry.Nation.Name + " Rebels", System.Drawing.Color.FromArgb(0x0000B33C)));
                             if ((await d1.ShowAsync()) != Windows.UI.Xaml.Controls.ContentDialogResult.Secondary)
                                 return;
 
@@ -352,11 +508,11 @@ namespace Mapperdom.ViewModels
                         }
                         else
                         {
-                            PickSideDialog d1 = new PickSideDialog(this, ReferencedGame.Sides.Count > 0, new WarSide("", System.Drawing.Color.FromArgb(255, 0, 0, 0), System.Drawing.Color.FromArgb(255, 0, 0, 0), System.Drawing.Color.FromArgb(255, 0, 0, 0), System.Drawing.Color.FromArgb(255, 0, 0, 0)), new ObservableCollection<WarSide>(ReferencedGame.Sides.Values), SelectedDisplayEntry.Nation);
+                            PickSideDialog d1 = new PickSideDialog(this, ReferencedGame.Sides.Count > 0, new ObservableCollection<WarSide>(ReferencedGame.Sides.Values), SelectedDisplayEntry.Nation);
                             if ((await d1.ShowAsync()) != Windows.UI.Xaml.Controls.ContentDialogResult.Secondary)
                                 return;
 
-                            PickSideDialog d2 = new PickSideDialog(this, ReferencedGame.Sides.Count > 0, d1.ViewModel.IsNewWarSide ? d1.ViewModel.NewWarSide : d1.ViewModel.SelectedWarSide, new ObservableCollection<WarSide>(ReferencedGame.Sides.Values.ToList()), new Nation(SelectedDisplayEntry.Nation.Name + " Rebels"));
+                            PickSideDialog d2 = new PickSideDialog(this, ReferencedGame.Sides.Count > 0, new ObservableCollection<WarSide>(ReferencedGame.Sides.Values.ToList()), new Nation(SelectedDisplayEntry.Nation.Name + " Rebels", System.Drawing.Color.FromArgb(0x0000B33C)));
                             if ((await d2.ShowAsync()) != Windows.UI.Xaml.Controls.ContentDialogResult.Secondary)
                                 return;
 
@@ -397,9 +553,8 @@ namespace Mapperdom.ViewModels
                 if (_attackNWCommand == null)
                     _attackNWCommand = new RelayCommand(() =>
                     {
-                        ReferencedGame.Backup();
-                        ReferencedGame.Advance((ushort)ForceStrength, ReferencedGame.Nations.Single(pair => pair.Value == SelectedDisplayEntry.Nation).Key, NavyForcesEnabled, -1, -1);
-                        SourceImage = ReferencedGame.GetCurrentMap();
+                        SelectedDisplayEntry.Nation.plan.xFocus = -1;
+                        SelectedDisplayEntry.Nation.plan.yFocus = -1;
                     });
 
                 return _attackNWCommand;
@@ -414,9 +569,8 @@ namespace Mapperdom.ViewModels
                 if (_attackNCommand == null)
                     _attackNCommand = new RelayCommand(() =>
                     {
-                        ReferencedGame.Backup();
-                        ReferencedGame.Advance((ushort)ForceStrength, ReferencedGame.Nations.Single(pair => pair.Value == SelectedDisplayEntry.Nation).Key, NavyForcesEnabled, 0, -2);
-                        SourceImage = ReferencedGame.GetCurrentMap();
+                        SelectedDisplayEntry.Nation.plan.xFocus = 0;
+                        SelectedDisplayEntry.Nation.plan.yFocus = -2;
                     });
 
                 return _attackNCommand;
@@ -431,9 +585,8 @@ namespace Mapperdom.ViewModels
                 if (_attackNECommand == null)
                     _attackNECommand = new RelayCommand(() =>
                     {
-                        ReferencedGame.Backup();
-                        ReferencedGame.Advance((ushort)ForceStrength, ReferencedGame.Nations.Single(pair => pair.Value == SelectedDisplayEntry.Nation).Key, NavyForcesEnabled, 1, -1);
-                        SourceImage = ReferencedGame.GetCurrentMap();
+                        SelectedDisplayEntry.Nation.plan.xFocus = 1;
+                        SelectedDisplayEntry.Nation.plan.yFocus = -1;
                     });
 
                 return _attackNECommand;
@@ -449,9 +602,8 @@ namespace Mapperdom.ViewModels
                 if (_attackWCommand == null)
                     _attackWCommand = new RelayCommand(() =>
                     {
-                        ReferencedGame.Backup();
-                        ReferencedGame.Advance((ushort)ForceStrength, ReferencedGame.Nations.Single(pair => pair.Value == SelectedDisplayEntry.Nation).Key, NavyForcesEnabled, -2, -0);
-                        SourceImage = ReferencedGame.GetCurrentMap();
+                        SelectedDisplayEntry.Nation.plan.xFocus = -2;
+                        SelectedDisplayEntry.Nation.plan.yFocus = 0;
                     });
 
                 return _attackWCommand;
@@ -466,9 +618,8 @@ namespace Mapperdom.ViewModels
                 if (_attackCCommand == null)
                     _attackCCommand = new RelayCommand(() =>
                     {
-                        ReferencedGame.Backup();
-                        ReferencedGame.Advance((ushort)ForceStrength, ReferencedGame.Nations.Single(pair => pair.Value == SelectedDisplayEntry.Nation).Key, NavyForcesEnabled, 0, 0);
-                        SourceImage = ReferencedGame.GetCurrentMap();
+                        SelectedDisplayEntry.Nation.plan.xFocus = 0;
+                        SelectedDisplayEntry.Nation.plan.yFocus = 0;
                     });
 
                 return _attackCCommand;
@@ -483,9 +634,8 @@ namespace Mapperdom.ViewModels
                 if (_attackECommand == null)
                     _attackECommand = new RelayCommand(() =>
                     {
-                        ReferencedGame.Backup();
-                        ReferencedGame.Advance((ushort)ForceStrength, ReferencedGame.Nations.Single(pair => pair.Value == SelectedDisplayEntry.Nation).Key, NavyForcesEnabled, 2, 0);
-                        SourceImage = ReferencedGame.GetCurrentMap();
+                        SelectedDisplayEntry.Nation.plan.xFocus = 2;
+                        SelectedDisplayEntry.Nation.plan.yFocus = 0;
                     });
 
                 return _attackECommand;
@@ -501,9 +651,8 @@ namespace Mapperdom.ViewModels
                 if (_attackSWCommand == null)
                     _attackSWCommand = new RelayCommand(() =>
                     {
-                        ReferencedGame.Backup();
-                        ReferencedGame.Advance((ushort)ForceStrength, ReferencedGame.Nations.Single(pair => pair.Value == SelectedDisplayEntry.Nation).Key, NavyForcesEnabled, -1, 1);
-                        SourceImage = ReferencedGame.GetCurrentMap();
+                        SelectedDisplayEntry.Nation.plan.xFocus = -1;
+                        SelectedDisplayEntry.Nation.plan.yFocus = 1;
                     });
 
                 return _attackSWCommand;
@@ -518,9 +667,8 @@ namespace Mapperdom.ViewModels
                 if (_attackSCommand == null)
                     _attackSCommand = new RelayCommand(() =>
                     {
-                        ReferencedGame.Backup();
-                        ReferencedGame.Advance((ushort)ForceStrength, ReferencedGame.Nations.Single(pair => pair.Value == SelectedDisplayEntry.Nation).Key, NavyForcesEnabled, 0, 2);
-                        SourceImage = ReferencedGame.GetCurrentMap();
+                        SelectedDisplayEntry.Nation.plan.xFocus = 0;
+                        SelectedDisplayEntry.Nation.plan.yFocus = 2;
                     });
 
                 return _attackSCommand;
@@ -535,9 +683,8 @@ namespace Mapperdom.ViewModels
                 if (_attackSECommand == null)
                     _attackSECommand = new RelayCommand(() =>
                     {
-                        ReferencedGame.Backup();
-                        ReferencedGame.Advance((ushort)ForceStrength, ReferencedGame.Nations.Single(pair => pair.Value == SelectedDisplayEntry.Nation).Key, NavyForcesEnabled, 1, 1);
-                        SourceImage = ReferencedGame.GetCurrentMap();
+                        SelectedDisplayEntry.Nation.plan.xFocus = 1;
+                        SelectedDisplayEntry.Nation.plan.yFocus = 1;
                     });
 
                 return _attackSECommand;

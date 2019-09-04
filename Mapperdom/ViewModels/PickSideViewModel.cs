@@ -21,8 +21,6 @@ namespace Mapperdom.ViewModels
             }
         }
 
-        private readonly WarSide _sideToRival;
-
         private Nation _selectedNation;
         public Nation SelectedNation
         {
@@ -101,13 +99,12 @@ namespace Mapperdom.ViewModels
                 return IsNewWarSide ? Visibility.Collapsed : Visibility.Visible;
             }
         }
-        public PickSideViewModel(bool canJoinSide, WarSide sideToRival, ObservableCollection<WarSide> sidesList, Nation newNation)
+        public PickSideViewModel(bool canJoinSide, ObservableCollection<WarSide> sidesList, Nation nation)
         {
             _canJoinSide = canJoinSide;
-            _sideToRival = sideToRival;
             NewWarSide = new WarSide("New Side", System.Drawing.Color.FromArgb(255, 0, 0, 0), System.Drawing.Color.FromArgb(255, 0, 0, 0), System.Drawing.Color.FromArgb(255, 0, 0, 0), System.Drawing.Color.FromArgb(255, 0, 0, 0));
             Set(ref _sidesAvailable, new ObservableCollection<WarSide>(sidesList), "SidesAvailable");
-            SelectedNation = newNation;
+            SelectedNation = nation;
 
             if (!_canJoinSide)
                 IsNewWarSide = true;

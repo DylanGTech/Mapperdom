@@ -5,6 +5,10 @@ namespace Mapperdom.Models
 {
     public class Nation : Observable, ICloneable
     {
+
+        public AttackInitiative plan;
+
+
         private string _name;
         public string Name
         {
@@ -58,11 +62,11 @@ namespace Mapperdom.Models
         }
 
 
-        public Nation(string name, Nation master = null)
+        public Nation(string name, System.Drawing.Color mainColor, Nation master = null)
         {
             Name = name;
             Master = master;
-            MainColor = System.Drawing.Color.FromArgb(0x0000B33C);
+            MainColor = mainColor;
         }
 
         public static System.Drawing.Color ColorFromHsl(float hue, float saturation, float brightness)
@@ -122,7 +126,7 @@ namespace Mapperdom.Models
 
         public object Clone()
         {
-            return new Nation(Name, Master);
+            return new Nation(Name, MainColor, Master);
         }
     }
 }

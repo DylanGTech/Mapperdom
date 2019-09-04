@@ -24,10 +24,10 @@ namespace Mapperdom.Views
     {
         public MainViewModel OriginalViewModel { get; } = new MainViewModel();
         public PickSideViewModel ViewModel { get; }
-        public PickSideDialog(MainViewModel originalViewModel, bool canJoinSide, WarSide sideToRival, ObservableCollection<WarSide> sidesList, Nation newNation)
+        public PickSideDialog(MainViewModel originalViewModel, bool canJoinSide, ObservableCollection<WarSide> sidesList, Nation nation)
         {
             this.InitializeComponent();
-            ViewModel = new PickSideViewModel(canJoinSide, sideToRival, sidesList, newNation);
+            ViewModel = new PickSideViewModel(canJoinSide, sidesList, nation);
         }
     }
     public class ColorConverter : IValueConverter

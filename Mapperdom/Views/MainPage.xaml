@@ -21,9 +21,19 @@
 
         <MenuBar Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" VerticalAlignment="Top">
             <MenuBarItem Title="File">
-                <MenuFlyoutItem Text="New" Command="{x:Bind ViewModel.NewGameCommand}" IsEnabled="True">
+                <MenuFlyoutItem Text="New Project" Command="{x:Bind ViewModel.NewGameCommand}" IsEnabled="True">
                     <MenuFlyoutItem.Icon>
                         <SymbolIcon Symbol="NewWindow"/>
+                    </MenuFlyoutItem.Icon>
+                </MenuFlyoutItem>
+                <MenuFlyoutItem Text="Save Project" Command="{x:Bind ViewModel.SaveProjectCommand}" IsEnabled="{x:Bind ViewModel.IsActiveGame, Mode=OneWay}">
+                    <MenuFlyoutItem.Icon>
+                        <SymbolIcon Symbol="Download"/>
+                    </MenuFlyoutItem.Icon>
+                </MenuFlyoutItem>
+                <MenuFlyoutItem Text="Load Project" Command="{x:Bind ViewModel.LoadProjectCommand}">
+                    <MenuFlyoutItem.Icon>
+                        <SymbolIcon Symbol="Upload"/>
                     </MenuFlyoutItem.Icon>
                 </MenuFlyoutItem>
                 <MenuFlyoutItem Text="Save Frame" Command="{x:Bind ViewModel.SaveImageCommand}" IsEnabled="{x:Bind ViewModel.IsActiveGame, Mode=OneWay}">
@@ -50,6 +60,8 @@
         <Image Source="{x:Bind ViewModel.SourceImage, Mode=OneWay}" Grid.Row="1" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center"/>
         <ScrollViewer Grid.Row="1" Grid.Column="1" HorizontalScrollBarVisibility="Disabled">
             <StackPanel>
+                <Button x:Name="ExecutePlanButton" IsEnabled="{x:Bind ViewModel.IsActiveGame, Mode=OneWay}" HorizontalAlignment="Center" Content="Execute Plan" Command="{x:Bind ViewModel.ExecutePlanCommand}"/>
+
                 <Slider IsEnabled="{x:Bind ViewModel.SelectedNationIsAtWar, Mode=OneWay}" Minimum="0" Maximum="60" Value="{x:Bind ViewModel.ForceStrength, Mode=TwoWay}" Header="Advancing Force" Width="256"/>
 
                 <TextBlock Text="Direction" HorizontalAlignment="Center"/>
@@ -82,6 +94,9 @@
                 <Button x:Name="AnnexOccupationButton" IsEnabled="{x:Bind ViewModel.SelectedNationIsAtWar, Mode=OneWay}" HorizontalAlignment="Center" Content="Annex Occupation" Command="{x:Bind ViewModel.AnnexOccupationCommand}"/>
                 <Button x:Name="SurrenderButton" IsEnabled="{x:Bind ViewModel.SelectedNationIsAtWar, Mode=OneWay}" HorizontalAlignment="Center" Content="Surrender" Command="{x:Bind ViewModel.SurrenderCommand}"/>
                 <Button x:Name="RebellionButton" IsEnabled="{x:Bind ViewModel.IsActiveGame, Mode=OneWay}" HorizontalAlignment="Center" Content="Rebellion" Command="{x:Bind ViewModel.StartUprisingCommand}"/>
+
+                <Button x:Name="DeclareWarButton" IsEnabled="{x:Bind ViewModel.IsActiveGame, Mode=OneWay}" HorizontalAlignment="Center" Content="Declare War" Command="{x:Bind ViewModel.DeclareWarCommand}"/>
+
 
                 <TextBlock x:Name="MessageBlock" VerticalAlignment="Center"/>
 

@@ -73,7 +73,7 @@
             </Grid>
         </StackPanel>
         <StackPanel Visibility="{x:Bind ViewModel.PickSideVisibility, Mode=OneWay}">
-            <ComboBox Header="Side to join" ItemsSource="{x:Bind ViewModel.SidesAvailable}" SelectedValue="{x:Bind ViewModel.SelectedWarSide}" DisplayMemberPath="Name"/>
+            <ComboBox Header="Side to join" ItemsSource="{x:Bind ViewModel.SidesAvailable}" SelectedValue="{x:Bind ViewModel.SelectedWarSide, Mode=TwoWay}" DisplayMemberPath="Name"/>
         </StackPanel>
     </StackPanel>
 </ContentDialog>
