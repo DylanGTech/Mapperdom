@@ -17,6 +17,9 @@ using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Imaging;
 using Mapperdom.Services;
 using System.Threading.Tasks;
+using Windows.UI.Xaml.Controls.Primitives;
+using Windows.UI.Xaml.Controls;
+using Windows.UI.Popups;
 
 namespace Mapperdom.ViewModels
 {
@@ -235,7 +238,13 @@ namespace Mapperdom.ViewModels
                     _loadProjectCommand = new RelayCommand(async () =>
                     {
                         ReferencedGame = await SaveService.LoadAsync("LastSave");
-                        SourceImage = ReferencedGame.GetCurrentMap();
+                        if(ReferencedGame != null)
+                            SourceImage = ReferencedGame.GetCurrentMap();
+                        else
+                        {
+                            MessageDialog errorDialog = new MessageDialog("There was an error loading your most recent project", "Error");
+                            await errorDialog.ShowAsync();
+                        }
                     });
 
                 return _loadProjectCommand;
@@ -268,9 +277,11 @@ namespace Mapperdom.ViewModels
                             {
                                 ReferencedGame = new MapperGame(bmp);
                             }
-                            catch (Exception)
+                            catch (Exception e)
                             {
-                                //Do nothing (for now)
+                                MessageDialog errorDialog = new MessageDialog(e.Message, "Error");
+                                await errorDialog.ShowAsync();
+
                                 return;
                             }
                             SourceImage = ReferencedGame.GetCurrentMap();

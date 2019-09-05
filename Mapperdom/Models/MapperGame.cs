@@ -78,17 +78,8 @@ namespace Mapperdom.Models
                         }
                         else
                         {
-                            if (x < baseImage.PixelWidth / 2)
-                            {
-                                ownershipData[x, y] = 1;
-                                occupationData[x, y] = 1;
-                            }
-                            else
-                            {
-                                ownershipData[x, y] = 2;
-                                occupationData[x, y] = 2;
-
-                            }
+                            ownershipData[x, y] = 1;
+                            occupationData[x, y] = 1;
                         }
                     }
                     //Invalid
@@ -104,8 +95,7 @@ namespace Mapperdom.Models
 
             //Default nations
             Nations.Add(0, new Nation("Rogopia", System.Drawing.Color.FromArgb(0x0000B33C)));
-            Nations.Add(1, new Nation("Mechadia Major", System.Drawing.Color.FromArgb(0x0000B33C)));
-            Nations.Add(2, new Nation("Mechadia Minor", System.Drawing.Color.FromArgb(0x0000B33C)));
+            Nations.Add(1, new Nation("Mechadia", System.Drawing.Color.FromArgb(0x0000B33C)));
             //nations.Add(1, new Nation("Mechadia"));
 
             //sides.Add(0, new WarSide("Northerners", Nation.ColorFromHSL(0f, 0.6f, 0.5f)));
