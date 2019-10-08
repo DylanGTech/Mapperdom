@@ -8,6 +8,20 @@ namespace Mapperdom.Models
 
         public AttackInitiative plan;
 
+        public bool _isSelected;
+
+        public bool IsSelected
+        {
+            get
+            {
+                return _isSelected;
+            }
+            set
+            {
+                Set(ref _isSelected, value);
+            }
+        }
+
 
         private string _name;
         public string Name
@@ -62,10 +76,11 @@ namespace Mapperdom.Models
         }
 
 
-        public Nation(string name, System.Drawing.Color mainColor, Nation master = null)
+        public Nation(string name, System.Drawing.Color mainColor, byte? warSide = null, Nation master = null)
         {
             Name = name;
             Master = master;
+            WarSide = warSide;
             MainColor = mainColor;
         }
 
@@ -126,7 +141,7 @@ namespace Mapperdom.Models
 
         public object Clone()
         {
-            return new Nation(Name, MainColor, Master);
+            return new Nation(Name, MainColor, WarSide, Master);
         }
     }
 }

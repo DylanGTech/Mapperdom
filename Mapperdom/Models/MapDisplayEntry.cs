@@ -8,6 +8,7 @@ namespace Mapperdom.Models
 {
     public class MapDisplayEntry : Observable
     {
+
         private Nation _nation;
         public Nation Nation
         {

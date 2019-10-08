@@ -24,7 +24,7 @@ namespace Mapperdom.Services
             config.ConfigType<MapState>().ConfigMember(ms => ms.TalkingNation).Exclude().ConstructBy(typeof(MapState).GetConstructors()[0]);
             config.ConfigType<Nation>().ConstructBy(typeof(Nation).GetConstructors()[0]);
             config.ConfigType<WarSide>().ConstructBy(typeof(WarSide).GetConstructors()[0]);
-
+            config.ConfigType<PixelData>().ConstructBy(typeof(PixelData).GetConstructors()[0]);
             return config;
         }
 
@@ -34,8 +34,7 @@ namespace Mapperdom.Services
 
             CerasSerializer serializer = new CerasSerializer(GetConfig());
 
-            MapState state = new MapState(map.ownershipData, map.occupationData, map.newCapturesData, map.Nations, map.Sides);
-            state.TalkingNation = map.TalkingNation;
+            MapState state = new MapState(map.Pixels, map.Nations, map.Sides);
 
 
             StorageFolder saveLocation = await ApplicationData.Current.LocalFolder.CreateFolderAsync("SavedMaps", CreationCollisionOption.OpenIfExists);
@@ -52,9 +51,9 @@ namespace Mapperdom.Services
             IRandomAccessStream stream = await file.OpenAsync(FileAccessMode.ReadWrite);
             BitmapEncoder encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.PngEncoderId, stream);
             Stream pixelStream = map.baseImage.PixelBuffer.AsStream();
-            byte[] pixels = new byte[pixelStream.Length];
-            await pixelStream.ReadAsync(pixels, 0, pixels.Length);
-            encoder.SetPixelData(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Ignore, (uint)map.baseImage.PixelWidth, (uint)map.baseImage.PixelHeight, 96.0, 96.0, pixels);
+            byte[] Pixels = new byte[pixelStream.Length];
+            await pixelStream.ReadAsync(Pixels, 0, Pixels.Length);
+            encoder.SetPixelData(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Ignore, (uint)map.baseImage.PixelWidth, (uint)map.baseImage.PixelHeight, 96.0, 96.0, Pixels);
             await encoder.FlushAsync();
         }
 
@@ -96,10 +95,7 @@ namespace Mapperdom.Services
             MapperGame map = new MapperGame(bmp);
             map.Nations = state.Nations;
             map.Sides = state.Sides;
-            map.newCapturesData = state.NewCapturesData;
-            map.occupationData = state.OccupationData;
-            map.ownershipData = state.OwnershipData;
-            map.TalkingNation = null;
+            map.Pixels = state.Pixels;
 
             return map;
         }

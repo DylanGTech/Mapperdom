@@ -4,10 +4,13 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:t="http://schemas.telerik.com/2008/xaml/presentation"
+    xmlns:i="using:Microsoft.Xaml.Interactivity"
     xmlns:models="using:Mapperdom.Models"
+    xmlns:core="using:Microsoft.Xaml.Interactions.Core"
     Style="{StaticResource PageStyle}"
     mc:Ignorable="d">
-    <Grid x:Name="ContentArea">
+    <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="64"/>
             <RowDefinition Height="*"/>
@@ -60,63 +63,66 @@
         <Image Source="{x:Bind ViewModel.SourceImage, Mode=OneWay}" Grid.Row="1" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center"/>
         <ScrollViewer Grid.Row="1" Grid.Column="1" HorizontalScrollBarVisibility="Disabled">
             <StackPanel>
-                <Button x:Name="ExecutePlanButton" IsEnabled="{x:Bind ViewModel.IsActiveGame, Mode=OneWay}" HorizontalAlignment="Center" Content="Execute Plan" Command="{x:Bind ViewModel.ExecutePlanCommand}" Margin="8"/>
+                <Button IsEnabled="{x:Bind ViewModel.IsActiveGame, Mode=OneWay}" HorizontalAlignment="Center" Content="Step Forward" Command="{x:Bind ViewModel.ExecutePlanCommand}" Margin="8"/>
 
-                <Slider IsEnabled="{x:Bind ViewModel.SelectedNationIsAtWar, Mode=OneWay}" Minimum="0" Maximum="60" Value="{x:Bind ViewModel.ForceStrength, Mode=TwoWay}" Header="Advancing Force" Width="256"/>
+                <StackPanel Visibility="{x:Bind ViewModel.TreatyOptionsVisibility, Mode=OneWay}">
 
-                <TextBlock Text="Direction" HorizontalAlignment="Center"/>
-                <Grid Width="150" Height="150">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="2*"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="2*"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-
-                    <Button Grid.Row="0" Grid.Column="0" IsEnabled="{x:Bind ViewModel.SelectedNationIsAtWar, Mode=OneWay}" Command="{x:Bind ViewModel.AttackNWCommand}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Content="&#x2196;"/>
-                    <Button Grid.Row="0" Grid.Column="1" IsEnabled="{x:Bind ViewModel.SelectedNationIsAtWar, Mode=OneWay}" Command="{x:Bind ViewModel.AttackNCommand}" HorizontalAlignment="Stretch" Content="&#x2191;" VerticalAlignment="Stretch"/>
-                    <Button Grid.Row="0" Grid.Column="2" IsEnabled="{x:Bind ViewModel.SelectedNationIsAtWar, Mode=OneWay}" Command="{x:Bind ViewModel.AttackNECommand}" HorizontalAlignment="Stretch" Content="&#x2197;" VerticalAlignment="Stretch"/>
-                    <Button Grid.Row="1" Grid.Column="0" IsEnabled="{x:Bind ViewModel.SelectedNationIsAtWar, Mode=OneWay}" Command="{x:Bind ViewModel.AttackWCommand}" HorizontalAlignment="Stretch" Content="&#x2190;" VerticalAlignment="Stretch"/>
-                    <Button Grid.Row="1" Grid.Column="1" IsEnabled="{x:Bind ViewModel.SelectedNationIsAtWar, Mode=OneWay}" Command="{x:Bind ViewModel.AttackCCommand}" HorizontalAlignment="Stretch" Content="Normal" VerticalAlignment="Stretch"/>
-                    <Button Grid.Row="1" Grid.Column="2" IsEnabled="{x:Bind ViewModel.SelectedNationIsAtWar, Mode=OneWay}" Command="{x:Bind ViewModel.AttackECommand}" HorizontalAlignment="Stretch" Content="&#x2192;" VerticalAlignment="Stretch"/>
-                    <Button Grid.Row="2" Grid.Column="0" IsEnabled="{x:Bind ViewModel.SelectedNationIsAtWar, Mode=OneWay}" Command="{x:Bind ViewModel.AttackSWCommand}" HorizontalAlignment="Stretch" Content="&#x2199;" VerticalAlignment="Stretch"/>
-                    <Button Grid.Row="2" Grid.Column="1" IsEnabled="{x:Bind ViewModel.SelectedNationIsAtWar, Mode=OneWay}" Command="{x:Bind ViewModel.AttackSCommand}" HorizontalAlignment="Stretch" Content="&#x2193;" VerticalAlignment="Stretch"/>
-                    <Button Grid.Row="2" Grid.Column="2" IsEnabled="{x:Bind ViewModel.SelectedNationIsAtWar, Mode=OneWay}" Command="{x:Bind ViewModel.AttackSECommand}" HorizontalAlignment="Stretch" Content="&#x2198;" VerticalAlignment="Stretch"/>
-                </Grid>
-                <CheckBox IsEnabled="{x:Bind ViewModel.SelectedNationIsAtWar, Mode=OneWay}" IsChecked="{x:Bind ViewModel.NavyForcesEnabled, Mode=TwoWay}" Content="Attempt naval landings" HorizontalAlignment="Center"/>
-
-                <Rectangle Height="2" HorizontalAlignment="Stretch" MaxWidth="384" Fill="{StaticResource SystemAccentColor}"/>
-
-                <TextBlock Text="Actions" HorizontalAlignment="Center" FontSize="24"/>
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                    <Button x:Name="AnnexOccupationButton" IsEnabled="{x:Bind ViewModel.SelectedNationIsAtWar, Mode=OneWay}" HorizontalAlignment="Center" Content="Annex Occupation" Command="{x:Bind ViewModel.AnnexOccupationCommand}" Margin="8"/>
-                    <Button x:Name="SurrenderButton" IsEnabled="{x:Bind ViewModel.SelectedNationIsAtWar, Mode=OneWay}" HorizontalAlignment="Center" Content="Surrender" Command="{x:Bind ViewModel.SurrenderCommand}" Margin="8"/>
-                    <Button x:Name="RebellionButton" IsEnabled="{x:Bind ViewModel.IsActiveGame, Mode=OneWay}" HorizontalAlignment="Center" Content="Rebellion" Command="{x:Bind ViewModel.StartUprisingCommand}" Margin="8"/>
                 </StackPanel>
-                <Button x:Name="DeclareWarButton" IsEnabled="{x:Bind ViewModel.IsActiveGame, Mode=OneWay}" HorizontalAlignment="Center" Content="Declare War" Command="{x:Bind ViewModel.DeclareWarCommand}" Margin="8"/>
+                <StackPanel Visibility="{x:Bind ViewModel.WarOptionsVisibility, Mode=OneWay}">
+                    <Slider IsEnabled="{x:Bind ViewModel.SelectedNationIsAtWar, Mode=OneWay}" Minimum="0" Maximum="60" Value="{x:Bind ViewModel.ForceStrength, Mode=TwoWay}" Header="Advancing Force" Width="256"/>
 
-                <TextBlock x:Name="MessageBlock" VerticalAlignment="Center"/>
+                    <TextBlock Text="Direction" HorizontalAlignment="Center"/>
+                    <Grid Width="150" Height="150">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="2*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="2*"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
 
-                <CheckBox IsEnabled="{x:Bind ViewModel.IsActiveGame, Mode=OneWay}" IsChecked="{x:Bind ViewModel.NationIsTalking, Mode=TwoWay}" Content="Enable Talking" HorizontalAlignment="Center"/>
-                <ComboBox IsEnabled="{x:Bind ViewModel.NationIsTalking, Mode=OneWay}" ItemsSource="{x:Bind ViewModel.Nations, Mode=OneWay}" HorizontalAlignment="Center" DisplayMemberPath="Name" SelectedItem="{x:Bind ViewModel.TalkingNation, Mode=TwoWay}"/>
+                        <Button Grid.Row="0" Grid.Column="0" IsEnabled="{x:Bind ViewModel.SelectedNationIsAtWar, Mode=OneWay}" Command="{x:Bind ViewModel.AttackNWCommand}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Content="&#x2196;"/>
+                        <Button Grid.Row="0" Grid.Column="1" IsEnabled="{x:Bind ViewModel.SelectedNationIsAtWar, Mode=OneWay}" Command="{x:Bind ViewModel.AttackNCommand}" HorizontalAlignment="Stretch" Content="&#x2191;" VerticalAlignment="Stretch"/>
+                        <Button Grid.Row="0" Grid.Column="2" IsEnabled="{x:Bind ViewModel.SelectedNationIsAtWar, Mode=OneWay}" Command="{x:Bind ViewModel.AttackNECommand}" HorizontalAlignment="Stretch" Content="&#x2197;" VerticalAlignment="Stretch"/>
+                        <Button Grid.Row="1" Grid.Column="0" IsEnabled="{x:Bind ViewModel.SelectedNationIsAtWar, Mode=OneWay}" Command="{x:Bind ViewModel.AttackWCommand}" HorizontalAlignment="Stretch" Content="&#x2190;" VerticalAlignment="Stretch"/>
+                        <Button Grid.Row="1" Grid.Column="1" IsEnabled="{x:Bind ViewModel.SelectedNationIsAtWar, Mode=OneWay}" Command="{x:Bind ViewModel.AttackCCommand}" HorizontalAlignment="Stretch" Content="Normal" VerticalAlignment="Stretch"/>
+                        <Button Grid.Row="1" Grid.Column="2" IsEnabled="{x:Bind ViewModel.SelectedNationIsAtWar, Mode=OneWay}" Command="{x:Bind ViewModel.AttackECommand}" HorizontalAlignment="Stretch" Content="&#x2192;" VerticalAlignment="Stretch"/>
+                        <Button Grid.Row="2" Grid.Column="0" IsEnabled="{x:Bind ViewModel.SelectedNationIsAtWar, Mode=OneWay}" Command="{x:Bind ViewModel.AttackSWCommand}" HorizontalAlignment="Stretch" Content="&#x2199;" VerticalAlignment="Stretch"/>
+                        <Button Grid.Row="2" Grid.Column="1" IsEnabled="{x:Bind ViewModel.SelectedNationIsAtWar, Mode=OneWay}" Command="{x:Bind ViewModel.AttackSCommand}" HorizontalAlignment="Stretch" Content="&#x2193;" VerticalAlignment="Stretch"/>
+                        <Button Grid.Row="2" Grid.Column="2" IsEnabled="{x:Bind ViewModel.SelectedNationIsAtWar, Mode=OneWay}" Command="{x:Bind ViewModel.AttackSECommand}" HorizontalAlignment="Stretch" Content="&#x2198;" VerticalAlignment="Stretch"/>
+                    </Grid>
+                    <CheckBox IsEnabled="{x:Bind ViewModel.SelectedNationIsAtWar, Mode=OneWay}" IsChecked="{x:Bind ViewModel.NavyForcesEnabled, Mode=TwoWay}" Content="Attempt naval landings" HorizontalAlignment="Center"/>
+                    
+                </StackPanel>
+                
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Button IsEnabled="{x:Bind ViewModel.IsActiveGame, Mode=OneWay}" HorizontalAlignment="Center" Content="Rebellion" Command="{x:Bind ViewModel.StartUprisingCommand}" Margin="8"/>
+                    <Button IsEnabled="{x:Bind ViewModel.IsActiveGame, Mode=OneWay}" HorizontalAlignment="Center" Content="Declare War" Command="{x:Bind ViewModel.DeclareWarCommand}" Margin="8"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Button IsEnabled="{x:Bind ViewModel.SelectedNationIsAtWar, Mode=OneWay}" HorizontalAlignment="Center" Content="Annex Occupation" Command="{x:Bind ViewModel.AnnexOccupationCommand}" Margin="8"/>
+                    <Button IsEnabled="{x:Bind ViewModel.SelectedNationIsAtWar, Mode=OneWay}" HorizontalAlignment="Center" Content="Surrender" Command="{x:Bind ViewModel.SurrenderCommand}" Margin="8"/>
+                </StackPanel>
+
+                <CheckBox IsEnabled="{x:Bind ViewModel.IsActiveGame, Mode=OneWay}" IsChecked="{x:Bind ViewModel.IsTreatyMode, Mode=TwoWay}" Content="Treaty Mode" HorizontalAlignment="Center"/>
+
 
                 <ScrollViewer>
-                    <ListView x:Name="NationsList" SelectionMode="Single" ItemsSource="{x:Bind ViewModel.MapEntries, Mode=OneWay}" SelectedItem="{x:Bind ViewModel.SelectedDisplayEntry, Mode=TwoWay}">
+                    <ListView x:Name="nationsList" SelectionMode="Single" ItemsSource="{x:Bind ViewModel.MapEntries, Mode=OneWay}" SelectedItem="{x:Bind ViewModel.SelectedDisplayEntry, Mode=TwoWay}">
                         <ListView.ItemTemplate>
                             <DataTemplate x:DataType="models:MapDisplayEntry">
                                 <Grid HorizontalAlignment="Stretch">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="128"/>
+                                        <ColumnDefinition Width="128"/>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="128"/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Text="{x:Bind Nation.Name, Mode=OneWay}" Grid.Column="0" TextWrapping="WrapWholeWords" VerticalAlignment="Center" Padding="4"/>
-
-                                    <TextBlock Text="{x:Bind SideName, Mode=OneWay}" Grid.Column="1" TextWrapping="WrapWholeWords" FontStyle="Italic" FontSize="8" VerticalAlignment="Center" Padding="4"/>
+                                    <CheckBox IsChecked="{x:Bind Nation.IsSelected, Mode=TwoWay}"/>
+                                    <TextBlock Text="{x:Bind Nation.Name, Mode=OneWay}" Grid.Column="1" TextWrapping="WrapWholeWords" VerticalAlignment="Center" Padding="4"/>
 
                                     <Border Width="128" Height="48" Grid.Column="2">
                                         <Grid>
@@ -133,11 +139,13 @@
                                         </Grid>
                                     </Border>
 
+                                    <TextBlock Text="{x:Bind SideName, Mode=OneWay}" Grid.Column="3" TextWrapping="WrapWholeWords" FontStyle="Italic" FontSize="8" VerticalAlignment="Center" Padding="4"/>
                                 </Grid>
                             </DataTemplate>
                         </ListView.ItemTemplate>
                     </ListView>
                 </ScrollViewer>
+                <Button IsEnabled="{x:Bind ViewModel.IsActiveGame, Mode=OneWay}" HorizontalAlignment="Center" Content="Refresh Map" Command="{x:Bind ViewModel.RefreshMapCommand}" Margin="8"/>
             </StackPanel>
         </ScrollViewer>
     </Grid>

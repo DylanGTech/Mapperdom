@@ -8,21 +8,20 @@ namespace Mapperdom.Models
 {
     public class MapState
     {
-        public byte?[,] OwnershipData { get; set; } //Determines which nation officially owns a pixel (including puppet states)
-        public byte?[,] OccupationData { get; set; } //Determines which nation occupies a pixel (excluding puppet states)
-        public bool[,] NewCapturesData { get; set; }
+
+        public PixelData[,] Pixels { get; set; }
+
 
         public Nation TalkingNation; //DO NOT Serialize. This is just a reference
+        public List<Nation> SelectedNations; //Same here
 
         public Dictionary<byte, Nation> Nations { get; set; }
 
         public Dictionary<byte, WarSide> Sides { get; set; }
 
-        public MapState(byte?[,] ownershipData, byte?[,] occupationData, bool[,] newCapturesData, Dictionary<byte, Nation> nations, Dictionary<byte, WarSide> sides)
+        public MapState(PixelData[,] pixels, Dictionary<byte, Nation> nations, Dictionary<byte, WarSide> sides)
         {
-            OwnershipData = ownershipData;
-            OccupationData = occupationData;
-            NewCapturesData = newCapturesData;
+            Pixels = pixels;
             Nations = nations;
             Sides = sides;
         }

@@ -20,6 +20,8 @@ using System.Threading.Tasks;
 using Windows.UI.Xaml.Controls.Primitives;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Popups;
+using Windows.UI.Xaml;
+using System.Text;
 
 namespace Mapperdom.ViewModels
 {
@@ -31,6 +33,23 @@ namespace Mapperdom.ViewModels
             get
             {
                 return SaveService.CanLoad("LastSave");
+            }
+        }
+
+        public bool IsTreatyMode
+        {
+            get
+            {
+                if (ReferencedGame == null) return false;
+
+                return ReferencedGame.IsTreatyMode;
+            }
+            set
+            {
+                if (ReferencedGame != null)
+                    Set(ref ReferencedGame.IsTreatyMode, value, "IsTreatyMode");
+                OnPropertyChanged("TreatyOptionsVisibility");
+                OnPropertyChanged("WarOptionsVisibility");
             }
         }
 
@@ -52,22 +71,11 @@ namespace Mapperdom.ViewModels
         }
 
 
-
-        private bool _nationIsTalking;
         public bool NationIsTalking
         {
             get
             {
-                return _nationIsTalking;
-            }
-            set
-            {
-                Set(ref _nationIsTalking, value);
-
-                if(value == false)
-                {
-                    TalkingNation = null;
-                }
+                return Nations.Where(n => n.IsSelected).ToList().Count > 0;
             }
         }
 
@@ -81,26 +89,6 @@ namespace Mapperdom.ViewModels
             set
             {
                 Set(ref _nations, value);
-            }
-        }
-
-        public Nation TalkingNation
-        {
-            get
-            {
-                if (ReferencedGame != null)
-                    return ReferencedGame.TalkingNation;
-                else
-                    return null;
-            }
-            set
-            {
-                if(ReferencedGame != null)
-                {
-                    Set(ref ReferencedGame.TalkingNation, value);
-                    SourceImage = ReferencedGame.GetCurrentMap();
-
-                }
             }
         }
 
@@ -195,6 +183,22 @@ namespace Mapperdom.ViewModels
             }
         }
 
+        public Visibility WarOptionsVisibility
+        {
+            get
+            {
+                return IsTreatyMode ? Visibility.Collapsed : Visibility.Visible;
+            }
+        }
+        public Visibility TreatyOptionsVisibility
+        {
+            get
+            {
+                return IsTreatyMode ? Visibility.Visible : Visibility.Collapsed;
+            }
+        }
+
+
         private ICommand _executePlanCommand;
         public ICommand ExecutePlanCommand
         {
@@ -212,6 +216,21 @@ namespace Mapperdom.ViewModels
             }
         }
 
+        private ICommand _refreshMapCommand;
+        public ICommand RefreshMapCommand
+        {
+            get
+            {
+                if (_refreshMapCommand == null)
+                    _refreshMapCommand = new RelayCommand(() =>
+                    {
+                        SourceImage = ReferencedGame.GetCurrentMap();
+                        ReferencedGame.Backup();
+                    });
+
+                return _refreshMapCommand;
+            }
+        }
 
 
         private ICommand _saveProjectCommand;
@@ -237,12 +256,26 @@ namespace Mapperdom.ViewModels
                 if (_loadProjectCommand == null)
                     _loadProjectCommand = new RelayCommand(async () =>
                     {
-                        ReferencedGame = await SaveService.LoadAsync("LastSave");
-                        if(ReferencedGame != null)
-                            SourceImage = ReferencedGame.GetCurrentMap();
-                        else
+                        try
                         {
-                            MessageDialog errorDialog = new MessageDialog("There was an error loading your most recent project", "Error");
+                            ReferencedGame = await SaveService.LoadAsync("LastSave");
+
+                            if (ReferencedGame != null)
+                                SourceImage = ReferencedGame.GetCurrentMap();
+                            else
+                            {
+                                MessageDialog errorDialog = new MessageDialog("There was an error loading your most recent project", "Error");
+                                await errorDialog.ShowAsync();
+                            }
+                        }
+                        catch(FileNotFoundException)
+                        {
+                            MessageDialog errorDialog = new MessageDialog("Save file not found", "Error");
+                            await errorDialog.ShowAsync();
+                        }
+                        catch(DecoderFallbackException)
+                        {
+                            MessageDialog errorDialog = new MessageDialog("There was an error reading your project save file. It is most likely outdated", "Error");
                             await errorDialog.ShowAsync();
                         }
                     });
@@ -328,11 +361,11 @@ namespace Mapperdom.ViewModels
 
 
                             Stream pixelStream = wb.PixelBuffer.AsStream();
-                            byte[] pixels = new byte[pixelStream.Length];
-                            await pixelStream.ReadAsync(pixels, 0, pixels.Length);
+                            byte[] Pixels = new byte[pixelStream.Length];
+                            await pixelStream.ReadAsync(Pixels, 0, Pixels.Length);
 
                             // Set additional encoding parameters, if needed
-                            encoder.SetPixelData(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Ignore, (uint)wb.PixelHeight, (uint)wb.PixelHeight, 96.0, 96.0, pixels);
+                            encoder.SetPixelData(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Ignore, (uint)wb.PixelHeight, (uint)wb.PixelHeight, 96.0, 96.0, Pixels);
 
                             try
                             {
@@ -416,7 +449,7 @@ namespace Mapperdom.ViewModels
             get
             {
                 if (_generateNextFrame == null)
-                    _generateNextFrame = new RelayCommand(async () =>
+                    _generateNextFrame = new RelayCommand(() =>
                     {
                         ReferencedGame.Backup();
                         ReferencedGame.Advance();
@@ -466,9 +499,11 @@ namespace Mapperdom.ViewModels
                             if ((await d2.ShowAsync()) != Windows.UI.Xaml.Controls.ContentDialogResult.Secondary)
                                 return;
 
-                            if(d2.ViewModel.IsNewWarSide)
+                            if (d2.ViewModel.IsNewWarSide && d2.ViewModel.NewWarSide != null)
                                 n1Side = d2.ViewModel.NewWarSide;
-                            else n1Side = d2.ViewModel.SelectedWarSide;
+                            else if (!d2.ViewModel.IsNewWarSide && d2.ViewModel.SelectedWarSide != null)
+                                n1Side = d2.ViewModel.SelectedWarSide;
+                            else return;
                         }
 
                         if (n2Side == null)
@@ -480,9 +515,11 @@ namespace Mapperdom.ViewModels
                             if ((await d2.ShowAsync()) != Windows.UI.Xaml.Controls.ContentDialogResult.Secondary)
                                 return;
 
-                            if (d2.ViewModel.IsNewWarSide)
+                            if (d2.ViewModel.IsNewWarSide && d2.ViewModel.NewWarSide != null)
                                 n2Side = d2.ViewModel.NewWarSide;
-                            else n2Side = d2.ViewModel.SelectedWarSide;
+                            else if (!d2.ViewModel.IsNewWarSide && d2.ViewModel.SelectedWarSide != null)
+                                n2Side = d2.ViewModel.SelectedWarSide;
+                            else return;
                         }
 
                         ReferencedGame.Backup();
@@ -494,6 +531,9 @@ namespace Mapperdom.ViewModels
                 return _declareWarCommand;
             }
         }
+
+
+
 
 
 
@@ -511,7 +551,7 @@ namespace Mapperdom.ViewModels
                             options.Remove(ReferencedGame.Sides[SelectedDisplayEntry.Nation.WarSide.Value]);
 
                             PickSideDialog d1 = new PickSideDialog(this, ReferencedGame.Sides.Count > 0, options, new Nation(SelectedDisplayEntry.Nation.Name + " Rebels", System.Drawing.Color.FromArgb(0x0000B33C)));
-                            if ((await d1.ShowAsync()) != Windows.UI.Xaml.Controls.ContentDialogResult.Secondary)
+                            if ((await d1.ShowAsync()) != Windows.UI.Xaml.Controls.ContentDialogResult.Secondary || (d1.ViewModel.IsNewWarSide && d1.ViewModel.NewWarSide == null) || (!d1.ViewModel.IsNewWarSide && d1.ViewModel.SelectedWarSide == null))
                                 return;
 
                             ReferencedGame.Backup();
@@ -520,11 +560,11 @@ namespace Mapperdom.ViewModels
                         else
                         {
                             PickSideDialog d1 = new PickSideDialog(this, ReferencedGame.Sides.Count > 0, new ObservableCollection<WarSide>(ReferencedGame.Sides.Values), SelectedDisplayEntry.Nation);
-                            if ((await d1.ShowAsync()) != Windows.UI.Xaml.Controls.ContentDialogResult.Secondary)
+                            if ((await d1.ShowAsync()) != Windows.UI.Xaml.Controls.ContentDialogResult.Secondary || (d1.ViewModel.IsNewWarSide && d1.ViewModel.NewWarSide == null) || (!d1.ViewModel.IsNewWarSide && d1.ViewModel.SelectedWarSide == null))
                                 return;
 
                             PickSideDialog d2 = new PickSideDialog(this, ReferencedGame.Sides.Count > 0, new ObservableCollection<WarSide>(ReferencedGame.Sides.Values.ToList()), new Nation(SelectedDisplayEntry.Nation.Name + " Rebels", System.Drawing.Color.FromArgb(0x0000B33C)));
-                            if ((await d2.ShowAsync()) != Windows.UI.Xaml.Controls.ContentDialogResult.Secondary)
+                            if ((await d2.ShowAsync()) != Windows.UI.Xaml.Controls.ContentDialogResult.Secondary || (d2.ViewModel.IsNewWarSide && d1.ViewModel.NewWarSide == null) || (!d2.ViewModel.IsNewWarSide && d2.ViewModel.SelectedWarSide == null))
                                 return;
 
                             ReferencedGame.Backup();
@@ -708,7 +748,6 @@ namespace Mapperdom.ViewModels
 
         private void SetNationEntries()
         {
-            Nation n = TalkingNation;
             ObservableCollection<Nation> entries = new ObservableCollection<Nation>();
             
             if(ReferencedGame != null)
@@ -743,6 +782,8 @@ namespace Mapperdom.ViewModels
                         }
                     }
                 }
+
+                if (SelectedDisplayEntry == null) SelectedDisplayEntry = MapEntries.First();
             }
         }
 
