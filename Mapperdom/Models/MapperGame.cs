@@ -30,6 +30,7 @@ namespace Mapperdom.Models
         public string seed;
         private readonly Random rng;
 
+        public Dictionary<UnorderedBytePair, sbyte> Fronts = new Dictionary<UnorderedBytePair, sbyte>();
 
         public MapperGame(WriteableBitmap map, int? seed = null)
         {
@@ -52,18 +53,18 @@ namespace Mapperdom.Models
             {
                 for (int x = 0; x < baseImage.PixelWidth; x++)
                 {
-                     Pixels[x, y].IsGained = false;
+                    Pixels[x, y].IsGained = false;
                     //Ocean
-                    if (imageArray[4 * (y * baseImage.PixelHeight + x)] == 0 //Blue
-                        && imageArray[4 * (y * baseImage.PixelHeight + x) + 1] == 0 //Green
-                        && imageArray[4 * (y * baseImage.PixelHeight + x) + 2] == 0) //Red
+                    if (imageArray[4 * (y * baseImage.PixelWidth + x)] == 0 //Blue
+                        && imageArray[4 * (y * baseImage.PixelWidth + x) + 1] == 0 //Green
+                        && imageArray[4 * (y * baseImage.PixelWidth + x) + 2] == 0) //Red
                     {
                         Pixels[x, y].IsOcean = true;
                     }
                     //Land
-                    else if (imageArray[4 * (y * baseImage.PixelHeight + x)] == 255 //Blue
-                             && imageArray[4 * (y * baseImage.PixelHeight + x) + 1] == 255 //Green
-                             && imageArray[4 * (y * baseImage.PixelHeight + x) + 2] == 255) //Red
+                    else if (imageArray[4 * (y * baseImage.PixelWidth + x)] == 255 //Blue
+                             && imageArray[4 * (y * baseImage.PixelWidth + x) + 1] == 255 //Green
+                             && imageArray[4 * (y * baseImage.PixelWidth + x) + 2] == 255) //Red
                     {
                         Pixels[x, y].IsOcean = false;
                         if(y < baseImage.PixelHeight / 2)
@@ -81,7 +82,7 @@ namespace Mapperdom.Models
                     //Invalid
                     else
                         throw new Exception(
-                            $"Image composition contains invalid coloring: R:{imageArray[4 * (y * baseImage.PixelHeight + x) + 2]},G:{imageArray[4 * (y * baseImage.PixelHeight + x) + 1]},B:{imageArray[4 * (y * baseImage.PixelHeight + x)]}");
+                            $"Image composition contains invalid coloring: R:{imageArray[4 * (y * baseImage.PixelWidth + x) + 2]},G:{imageArray[4 * (y * baseImage.PixelWidth + x) + 1]},B:{imageArray[4 * (y * baseImage.PixelWidth + x)]}");
                 }
             }
 
@@ -129,9 +130,9 @@ namespace Mapperdom.Models
                 {
                     if (Pixels[x, y].IsOcean)
                     {
-                        imageArray[4 * (y * baseImage.PixelHeight + x)] = 126; // Blue
-                        imageArray[4 * (y * baseImage.PixelHeight + x) + 1] = 56; // Green
-                        imageArray[4 * (y * baseImage.PixelHeight + x) + 2] = 39; // Red
+                        imageArray[4 * (y * baseImage.PixelWidth + x)] = 126; // Blue
+                        imageArray[4 * (y * baseImage.PixelWidth + x) + 1] = 56; // Green
+                        imageArray[4 * (y * baseImage.PixelWidth + x) + 2] = 39; // Red
                         continue;
                     }
                     Nation officialNation = Nations[Pixels[x, y].OwnerId];
@@ -140,9 +141,9 @@ namespace Mapperdom.Models
 
                     if(IsTreatyMode && officialNation.IsSelected)
                     {
-                        imageArray[4 * (y * baseImage.PixelHeight + x)] = 255; // Blue
-                        imageArray[4 * (y * baseImage.PixelHeight + x) + 1] = 255; // Green
-                        imageArray[4 * (y * baseImage.PixelHeight + x) + 2] = 255; // Red
+                        imageArray[4 * (y * baseImage.PixelWidth + x)] = 255; // Blue
+                        imageArray[4 * (y * baseImage.PixelWidth + x) + 1] = 255; // Green
+                        imageArray[4 * (y * baseImage.PixelWidth + x) + 2] = 255; // Red
 
                         continue;
                     }
@@ -151,15 +152,15 @@ namespace Mapperdom.Models
                     {
                         if(officialNation.IsSelected)
                         {
-                            imageArray[4 * (y * baseImage.PixelHeight + x)] = 255; // Blue
-                            imageArray[4 * (y * baseImage.PixelHeight + x) + 1] = 255; // Green
-                            imageArray[4 * (y * baseImage.PixelHeight + x) + 2] = 255; // Red
+                            imageArray[4 * (y * baseImage.PixelWidth + x)] = 255; // Blue
+                            imageArray[4 * (y * baseImage.PixelWidth + x) + 1] = 255; // Green
+                            imageArray[4 * (y * baseImage.PixelWidth + x) + 2] = 255; // Red
                         }
                         else
                         {
-                            imageArray[4 * (y * baseImage.PixelHeight + x)] = officialNation.MainColor.B; // Blue
-                            imageArray[4 * (y * baseImage.PixelHeight + x) + 1] = officialNation.MainColor.G; // Green
-                            imageArray[4 * (y * baseImage.PixelHeight + x) + 2] = officialNation.MainColor.R; // Red
+                            imageArray[4 * (y * baseImage.PixelWidth + x)] = officialNation.MainColor.B; // Blue
+                            imageArray[4 * (y * baseImage.PixelWidth + x) + 1] = officialNation.MainColor.G; // Green
+                            imageArray[4 * (y * baseImage.PixelWidth + x) + 2] = officialNation.MainColor.R; // Red
                         }
                         continue;
                     }
@@ -168,45 +169,44 @@ namespace Mapperdom.Models
 
                     if (Pixels[x, y].IsGained) //Was this the most recent capture?
                     {
-                        imageArray[4 * (y * baseImage.PixelHeight + x)] = occupierSide.GainColor.B; // Blue
-                        imageArray[4 * (y * baseImage.PixelHeight + x) + 1] = occupierSide.GainColor.G; // Green
-                        imageArray[4 * (y * baseImage.PixelHeight + x) + 2] = occupierSide.GainColor.R; // Red
-                        //imageArray[4 * (y * baseImage.PixelHeight + x) + 3] = 0; // Opacity
+                        imageArray[4 * (y * baseImage.PixelWidth + x)] = occupierSide.GainColor.B; // Blue
+                        imageArray[4 * (y * baseImage.PixelWidth + x) + 1] = occupierSide.GainColor.G; // Green
+                        imageArray[4 * (y * baseImage.PixelWidth + x) + 2] = occupierSide.GainColor.R; // Red
+                        //imageArray[4 * (y * baseImage.PixelWidth + x) + 3] = 0; // Opacity
                     }
                     else if (officialNation.Master == null && officialNation == occupierNation
                     ) //Nation controls its own territory and is not puppetted
                     {
                         if (officialNation.IsSelected)
                         {
-                            imageArray[4 * (y * baseImage.PixelHeight + x)] = 255; // Blue
-                            imageArray[4 * (y * baseImage.PixelHeight + x) + 1] = 255; // Green
-                            imageArray[4 * (y * baseImage.PixelHeight + x) + 2] = 255; // Red
+                            imageArray[4 * (y * baseImage.PixelWidth + x)] = 255; // Blue
+                            imageArray[4 * (y * baseImage.PixelWidth + x) + 1] = 255; // Green
+                            imageArray[4 * (y * baseImage.PixelWidth + x) + 2] = 255; // Red
                         }
                         else
                         {
-                            imageArray[4 * (y * baseImage.PixelHeight + x)] = officialSide.MainColor.B; // Blue
-                            imageArray[4 * (y * baseImage.PixelHeight + x) + 1] = officialSide.MainColor.G; // Green
-                            imageArray[4 * (y * baseImage.PixelHeight + x) + 2] = officialSide.MainColor.R; // Red
+                            imageArray[4 * (y * baseImage.PixelWidth + x)] = officialSide.MainColor.B; // Blue
+                            imageArray[4 * (y * baseImage.PixelWidth + x) + 1] = officialSide.MainColor.G; // Green
+                            imageArray[4 * (y * baseImage.PixelWidth + x) + 2] = officialSide.MainColor.R; // Red
                             //imageArray[4 * (y * baseImage.PixelHeight + x) + 3] = 0; // Opacity
                         }
                     }
                     else if (officialNation.Master == occupierNation || officialNation == occupierNation
                     ) //Nation controlls a puppet's territory
                     {
-                        imageArray[4 * (y * baseImage.PixelHeight + x)] = occupierSide.PuppetColor.B; // Blue
-                        imageArray[4 * (y * baseImage.PixelHeight + x) + 1] =
-                            occupierSide.PuppetColor.G; // Green
-                        imageArray[4 * (y * baseImage.PixelHeight + x) + 2] = occupierSide.PuppetColor.R; // Red
-                        //imageArray[4 * (y * baseImage.PixelHeight + x) + 3] = 0; // Opacity
+                        imageArray[4 * (y * baseImage.PixelWidth + x)] = occupierSide.PuppetColor.B; // Blue
+                        imageArray[4 * (y * baseImage.PixelWidth + x) + 1] = occupierSide.PuppetColor.G; // Green
+                        imageArray[4 * (y * baseImage.PixelWidth + x) + 2] = occupierSide.PuppetColor.R; // Red
+                        //imageArray[4 * (y * baseImage.PixelWidth + x) + 3] = 0; // Opacity
                     }
                     else //Nation is occupied by another nation
                     {
-                        imageArray[4 * (y * baseImage.PixelHeight + x)] = occupierSide.OccupiedColor.B; // Blue
-                        imageArray[4 * (y * baseImage.PixelHeight + x) + 1] =
+                        imageArray[4 * (y * baseImage.PixelWidth + x)] = occupierSide.OccupiedColor.B; // Blue
+                        imageArray[4 * (y * baseImage.PixelWidth + x) + 1] =
                             occupierSide.OccupiedColor.G; // Green
-                        imageArray[4 * (y * baseImage.PixelHeight + x) + 2] =
+                        imageArray[4 * (y * baseImage.PixelWidth + x) + 2] =
                             occupierSide.OccupiedColor.R; // Red
-                        //imageArray[4 * (y * baseImage.PixelHeight + x) + 3] = 0; // Opacity
+                        //imageArray[4 * (y * baseImage.PixelWidth + x) + 3] = 0; // Opacity
                     }
                 }
             }
@@ -216,10 +216,10 @@ namespace Mapperdom.Models
             {
                 Point p = borders.Dequeue();
 
-                imageArray[4 * (p.Y * baseImage.PixelHeight + p.X)] = 0; // Blue
-                imageArray[4 * (p.Y * baseImage.PixelHeight + p.X) + 1] = 0; // Green
-                imageArray[4 * (p.Y * baseImage.PixelHeight + p.X) + 2] = 0; // Red
-                //imageArray[4 * (y * baseImage.PixelHeight + x) + 3] = 0; // Opacity
+                imageArray[4 * (p.Y * baseImage.PixelWidth + p.X)] = 0; // Blue
+                imageArray[4 * (p.Y * baseImage.PixelWidth + p.X) + 1] = 0; // Green
+                imageArray[4 * (p.Y * baseImage.PixelWidth + p.X) + 2] = 0; // Red
+                //imageArray[4 * (y * baseImage.PixelWidth + x) + 3] = 0; // Opacity
             }
         }
 
@@ -565,6 +565,7 @@ namespace Mapperdom.Models
             {
                 Sides.Remove(id);
             }
+            CleanFronts();
         }
 
         public void Collapse(byte destroyedNationId, byte destroyerNationId)
@@ -743,16 +744,16 @@ namespace Mapperdom.Models
                 PreviousStates.RemoveFirst();
             }
 
-                Dictionary<byte, Nation> clonedNations = new Dictionary<byte, Nation>();
-                foreach(KeyValuePair<byte, Nation> pair in Nations)
-                {
-                    clonedNations.Add(pair.Key, (Nation)pair.Value.Clone());
-                }
-                Dictionary<byte, WarSide> clonedSides = new Dictionary<byte, WarSide>();
-                foreach (KeyValuePair<byte, WarSide> pair in Sides)
-                {
-                    clonedSides.Add(pair.Key, (WarSide)pair.Value.Clone());
-                }
+            Dictionary<byte, Nation> clonedNations = new Dictionary<byte, Nation>();
+            foreach(KeyValuePair<byte, Nation> pair in Nations)
+            {
+                clonedNations.Add(pair.Key, (Nation)pair.Value.Clone());
+            }
+            Dictionary<byte, WarSide> clonedSides = new Dictionary<byte, WarSide>();
+            foreach (KeyValuePair<byte, WarSide> pair in Sides)
+            {
+                clonedSides.Add(pair.Key, (WarSide)pair.Value.Clone());
+            }
 
 
             PreviousStates.AddLast(new MapState((PixelData[,])Pixels.Clone(), clonedNations, clonedSides));
@@ -770,6 +771,7 @@ namespace Mapperdom.Models
             Nations = obtainedState.Nations;
             Sides = obtainedState.Sides;
             Pixels = obtainedState.Pixels;
+            Fronts = obtainedState.Fronts;
             PreviousStatesPosition--;
         }
 
@@ -782,6 +784,7 @@ namespace Mapperdom.Models
             Nations = obtainedState.Nations;
             Sides = obtainedState.Sides;
             Pixels = obtainedState.Pixels;
+            Fronts = obtainedState.Fronts;
             PreviousStatesPosition++;
         }
 
@@ -811,6 +814,47 @@ namespace Mapperdom.Models
 
                 Nations[nation2Id].WarSide = newWarSideId;
             }
+
+            CleanFronts();
+        }
+
+        public void WithdrawFromWar(byte nationID, bool keepLandOccuppied = false)
+        {
+            for (int y = 0; y < Pixels.GetLength(1); y++)
+            {
+                for (int x = 0; x < Pixels.GetLength(0); x++)
+                {
+                    if (Pixels[x, y].OwnerId == nationID || Pixels[x, y].OccupierId == nationID)
+                    {
+                        if(keepLandOccuppied)
+                        {
+                            Pixels[x, y].OwnerId = Pixels[x, y].OccupierId;
+                        }
+                        else
+                        {
+                            Pixels[x, y].OccupierId = Pixels[x, y].OwnerId;
+                        }
+                    }
+                }
+            }
+
+            byte side = Nations[nationID].WarSide.Value;
+            Nations[nationID].WarSide = null;
+
+
+            if (Nations.Values.Where(n => n.WarSide == side).ToList().Count == 0)
+                Sides.Remove(side);
+
+            if (Sides.Count == 1)
+            {
+                Sides.Clear();
+                foreach (Nation n in Nations.Values)
+                {
+                    n.WarSide = null;
+                }
+            }
+
+            CleanFronts();
         }
 
         public void StartUprising(byte nationID, Nation rebels, WarSide nationSide, WarSide rebelSide)
@@ -861,9 +905,32 @@ namespace Mapperdom.Models
                 {
                     x1 = rng.Next(0, Pixels.GetLength(0) - 1);
                     y1 = rng.Next(0, Pixels.GetLength(1) - 1);
-                } while (!Pixels[x1, y1].IsOcean && Pixels[x1, y1].OwnerId == nationID);
+                } while (Pixels[x1, y1].IsOcean || Pixels[x1, y1].OwnerId != nationID);
 
-                Pixels[x1, y1].OwnerId = newNationId;
+                Pixels[x1, y1].OccupierId = newNationId;
+            }
+        }
+
+
+        public void CleanFronts()
+        {
+            foreach(UnorderedBytePair pair in Fronts.Keys.ToList())
+            {
+                //If a nation was remove, a nation is not at war or nations wind up on the same side, throw out their values
+                if(!(Nations.ContainsKey(pair.getSmallerByte()) && Nations.ContainsKey(pair.getLargerByte())) || !(Nations[pair.getSmallerByte()].WarSide.HasValue && Nations[pair.getLargerByte()].WarSide.HasValue) || Nations[pair.getSmallerByte()].WarSide == Nations[pair.getLargerByte()].WarSide)
+                {
+                    Fronts.Remove(pair);
+                }
+            }
+
+            foreach(KeyValuePair<byte, Nation> p1 in Nations)
+            {
+                foreach (KeyValuePair<byte, Nation> p2 in Nations)
+                {
+                    if (p1.Equals(p2)) continue;
+                    if (Fronts.ContainsKey(new UnorderedBytePair(p1.Key, p2.Key)) || Fronts.ContainsKey(new UnorderedBytePair(p2.Key, p1.Key))) continue;
+                    else Fronts.Add(new UnorderedBytePair(p1.Key, p2.Key), 0);
+                }
             }
         }
     }

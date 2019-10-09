@@ -66,9 +66,36 @@
                 <Button IsEnabled="{x:Bind ViewModel.IsActiveGame, Mode=OneWay}" HorizontalAlignment="Center" Content="Step Forward" Command="{x:Bind ViewModel.ExecutePlanCommand}" Margin="8"/>
 
                 <StackPanel Visibility="{x:Bind ViewModel.TreatyOptionsVisibility, Mode=OneWay}">
-
+                    <Button IsEnabled="{x:Bind ViewModel.SelectedNationIsAtWar, Mode=OneWay}" HorizontalAlignment="Center" Content="Withdraw from War" Command="{x:Bind ViewModel.WithdrawFromWarCommand}" Margin="8"/>
                 </StackPanel>
+
                 <StackPanel Visibility="{x:Bind ViewModel.WarOptionsVisibility, Mode=OneWay}">
+                    <ScrollViewer VerticalScrollMode="Enabled" HorizontalScrollMode="Disabled" MaxHeight="320">
+                        <ListView x:Name="frontsList" ItemsSource="{x:Bind ViewModel.FrontEntries, Mode=OneWay}" SelectionMode="None" Width="320">
+                            <ListView.ItemTemplate>
+                                <DataTemplate x:DataType="models:FrontEntry">
+                                    <Grid HorizontalAlignment="Center" Width="240">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="64"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition/>
+                                            <RowDefinition/>
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Text="{x:Bind Nation1.Name, Mode=OneWay}" HorizontalAlignment="Left" Grid.Column="0" TextWrapping="WrapWholeWords" VerticalAlignment="Stretch" Padding="4"/>
+                                        <TextBlock Text="VS" Grid.Column="1" HorizontalAlignment="Center" TextWrapping="WrapWholeWords" VerticalAlignment="Center" Padding="4"/>
+                                        <TextBlock Text="{x:Bind Nation2.Name, Mode=OneWay}" HorizontalAlignment="Right" Grid.Column="2" TextWrapping="WrapWholeWords" VerticalAlignment="Stretch" Padding="4"/>
+                                        <Slider Grid.Row="1" Grid.ColumnSpan="3" Minimum="-70" Maximum="70" Value="{x:Bind Strength, Mode=TwoWay}" Header="Force" HorizontalAlignment="Stretch" VerticalAlignment="Center"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+                    </ScrollViewer>
+                </StackPanel>
+
+                <StackPanel Visibility="Collapsed">
                     <Slider IsEnabled="{x:Bind ViewModel.SelectedNationIsAtWar, Mode=OneWay}" Minimum="0" Maximum="60" Value="{x:Bind ViewModel.ForceStrength, Mode=TwoWay}" Header="Advancing Force" Width="256"/>
 
                     <TextBlock Text="Direction" HorizontalAlignment="Center"/>

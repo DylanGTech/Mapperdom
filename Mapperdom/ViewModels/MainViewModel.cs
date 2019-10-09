@@ -67,6 +67,7 @@ namespace Mapperdom.ViewModels
                 OnPropertyChanged("IsActiveGame");
                 SetMapEntries();
                 SetNationEntries();
+                SetAttackEntries();
             }
         }
 
@@ -119,7 +120,8 @@ namespace Mapperdom.ViewModels
             }
             set
             {
-                Set(ref SelectedDisplayEntry.Nation.plan.navalActivity, value);
+                if(SelectedDisplayEntry != null)
+                    Set(ref SelectedDisplayEntry.Nation.plan.navalActivity, value);
             }
         }
 
@@ -133,7 +135,7 @@ namespace Mapperdom.ViewModels
             set
             {
                 if(SelectedDisplayEntry != null)
-                Set(ref SelectedDisplayEntry.Nation.plan.range, (ushort)value);
+                    Set(ref SelectedDisplayEntry.Nation.plan.range, (ushort)value);
             }
         }
 
@@ -150,6 +152,7 @@ namespace Mapperdom.ViewModels
                 Set(ref _sourceImage, value);
                 SetMapEntries();
                 SetNationEntries();
+                SetAttackEntries();
             }
         }
 
@@ -169,6 +172,20 @@ namespace Mapperdom.ViewModels
                 OnPropertyChanged("ForceStrength");
             }
         }
+
+        private ObservableCollection<FrontEntry> _frontEntries;
+        public ObservableCollection<FrontEntry> FrontEntries
+        {
+            get
+            {
+                return _frontEntries;
+            }
+            set
+            {
+                Set(ref _frontEntries, value);
+            }
+        }
+
 
         private ObservableCollection<MapDisplayEntry> _mapEntries;
         public ObservableCollection<MapDisplayEntry> MapEntries
@@ -261,7 +278,10 @@ namespace Mapperdom.ViewModels
                             ReferencedGame = await SaveService.LoadAsync("LastSave");
 
                             if (ReferencedGame != null)
+                            {
+                                ReferencedGame.CleanFronts();
                                 SourceImage = ReferencedGame.GetCurrentMap();
+                            }
                             else
                             {
                                 MessageDialog errorDialog = new MessageDialog("There was an error loading your most recent project", "Error");
@@ -485,6 +505,9 @@ namespace Mapperdom.ViewModels
                         PickNationDialog d1 = new PickNationDialog(this, options, SelectedDisplayEntry.Nation);
                         if ((await d1.ShowAsync()) != Windows.UI.Xaml.Controls.ContentDialogResult.Secondary)
                                 return;
+                        if (d1.ViewModel.Nation2 == null)
+                            return;
+
 
                         WarSide n1Side = d1.ViewModel.Nation1.WarSide.HasValue ? ReferencedGame.Sides[d1.ViewModel.Nation1.WarSide.Value] : null;
                         WarSide n2Side = d1.ViewModel.Nation2.WarSide.HasValue ? ReferencedGame.Sides[d1.ViewModel.Nation2.WarSide.Value] : null;
@@ -509,7 +532,7 @@ namespace Mapperdom.ViewModels
                         if (n2Side == null)
                         {
                             ObservableCollection<WarSide> sideOptions = new ObservableCollection<WarSide>(ReferencedGame.Sides.Values);
-                            if (n2Side != null) sideOptions.Remove(n2Side);
+                            if (n1Side != null) sideOptions.Remove(n1Side);
 
                             PickSideDialog d2 = new PickSideDialog(this, options.Count > 0, new ObservableCollection<WarSide>(ReferencedGame.Sides.Values), d1.ViewModel.Nation2);
                             if ((await d2.ShowAsync()) != Windows.UI.Xaml.Controls.ContentDialogResult.Secondary)
@@ -533,7 +556,23 @@ namespace Mapperdom.ViewModels
         }
 
 
+        private ICommand _withdrawFromWarCommand;
+        public ICommand WithdrawFromWarCommand
+        {
+            get
+            {
+                if (_withdrawFromWarCommand == null)
+                    _withdrawFromWarCommand = new RelayCommand(async () =>
+                    {
+                        ReferencedGame.Backup();
+                        ReferencedGame.WithdrawFromWar(ReferencedGame.Nations.FirstOrDefault(n => n.Value == SelectedDisplayEntry.Nation).Key);
 
+                        SourceImage = ReferencedGame.GetCurrentMap();
+                    });
+
+                return _withdrawFromWarCommand;
+            }
+        }
 
 
 
@@ -749,10 +788,10 @@ namespace Mapperdom.ViewModels
         private void SetNationEntries()
         {
             ObservableCollection<Nation> entries = new ObservableCollection<Nation>();
-            
-            if(ReferencedGame != null)
+
+            if (ReferencedGame != null)
             {
-                if(Nations == null)
+                if (Nations == null)
                 {
                     foreach (Nation nat in ReferencedGame.Nations.Values.ToList())
                     {
@@ -786,6 +825,22 @@ namespace Mapperdom.ViewModels
                 if (SelectedDisplayEntry == null) SelectedDisplayEntry = MapEntries.First();
             }
         }
+
+        private void SetAttackEntries()
+        {
+            if(ReferencedGame != null)
+            {
+                if (FrontEntries == null)
+                    FrontEntries = new ObservableCollection<FrontEntry>();
+
+                FrontEntries.Clear();
+                foreach(KeyValuePair<UnorderedBytePair, sbyte> pair in ReferencedGame.Fronts)
+                {
+                    FrontEntries.Add(new FrontEntry(pair.Key, ReferencedGame));
+                }
+            }
+        }
+
 
         private void SetMapEntries()
         {

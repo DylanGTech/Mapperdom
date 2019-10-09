@@ -23,7 +23,7 @@
     <AppxAutoIncrementPackageRevision>False</AppxAutoIncrementPackageRevision>
     <GenerateTestArtifacts>True</GenerateTestArtifacts>
     <AppxBundle>Always</AppxBundle>
-    <AppxBundlePlatforms>x64</AppxBundlePlatforms>
+    <AppxBundlePlatforms>x86|x64|arm</AppxBundlePlatforms>
     <HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
     <PackageCertificateThumbprint>87610FAB7DF5D4A14B9098797CA755BC2B2BDDE9</PackageCertificateThumbprint>
     <AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
@@ -137,6 +137,8 @@
     <Compile Include="Helpers\RelayCommand.cs" />
     <Compile Include="Helpers\SettingsStorageExtensions.cs" />
     <Compile Include="Models\AttackInitiative.cs" />
+    <Compile Include="Models\FrontEntry.cs" />
+    <Compile Include="Models\UnorderedBytePair.cs" />
     <Compile Include="Models\MapState.cs" />
     <Compile Include="Models\MapDisplayEntry.cs" />
     <Compile Include="Models\MapperGame.cs" />

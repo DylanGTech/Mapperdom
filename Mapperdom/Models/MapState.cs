@@ -14,6 +14,7 @@ namespace Mapperdom.Models
 
         public Nation TalkingNation; //DO NOT Serialize. This is just a reference
         public List<Nation> SelectedNations; //Same here
+        public Dictionary<UnorderedBytePair, sbyte> Fronts; //And here
 
         public Dictionary<byte, Nation> Nations { get; set; }
 
