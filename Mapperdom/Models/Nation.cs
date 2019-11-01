@@ -6,8 +6,6 @@ namespace Mapperdom.Models
     public class Nation : Observable, ICloneable
     {
 
-        public AttackInitiative plan;
-
         public bool _isSelected;
 
         public bool IsSelected

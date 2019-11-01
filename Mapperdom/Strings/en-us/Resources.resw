@@ -122,7 +122,7 @@
     <comment>Application display name</comment>
   </data>
   <data name="AppDescription" xml:space="preserve">
-    <value>the Mapping Engine for the future!</value>
+    <value>The Mapping Engine for the future!</value>
     <comment>Application description</comment>
   </data>
   <data name="Main_Title.Text" xml:space="preserve">
@@ -214,12 +214,12 @@
     <comment>The Parameter DeferredDataFormatId is null or does not contains any element.</comment>
   </data>
   <data name="WhatsNew_Body.Text" xml:space="preserve">
-    <value>Pre-Beta Preview Release
+    <value>Beta Preview Release
 
-- Redid talking/selection so multiple nations can be highlighted for treaties and for dialog
-- Maps entered into the system now must be in a black-and-white format (allowing for further color customization later)
-- Decreased memory usage for mapping sessions and added reserved slots for future terrain/population values
-- Added Treaty Mode
+- Created new war system. Utilizing fronts, nations will now advance or retreat based on which nation they are fighting against.
+- Added color templates when creating war sides
+- Naval anvasions are now on by default, but has a limited range matching that of the attack range
+- Numerous crash and bug fixes, as well as performance improvements
 
 COMPATABILITY NOTICE: Beta versions are not guarenteed to work as expected. Updates to Beta versions may break earlier projects that are saved. It is not recommended to create long-term projects with Beta versions of Mapperdom, and please report any bugs you encounter</value>
     <comment>What's new prompt message body</comment>

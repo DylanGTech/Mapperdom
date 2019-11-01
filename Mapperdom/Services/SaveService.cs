@@ -25,6 +25,8 @@ namespace Mapperdom.Services
             config.ConfigType<Nation>().ConstructBy(typeof(Nation).GetConstructors()[0]);
             config.ConfigType<WarSide>().ConstructBy(typeof(WarSide).GetConstructors()[0]);
             config.ConfigType<PixelData>().ConstructBy(typeof(PixelData).GetConstructors()[0]);
+            config.ConfigType<UnorderedBytePair>().ConstructBy(typeof(UnorderedBytePair).GetConstructors()[0]);
+
             return config;
         }
 
@@ -34,7 +36,7 @@ namespace Mapperdom.Services
 
             CerasSerializer serializer = new CerasSerializer(GetConfig());
 
-            MapState state = new MapState(map.Pixels, map.Nations, map.Sides);
+            MapState state = new MapState(map.Pixels, map.Nations, map.Sides, map.Fronts);
 
 
             StorageFolder saveLocation = await ApplicationData.Current.LocalFolder.CreateFolderAsync("SavedMaps", CreationCollisionOption.OpenIfExists);
@@ -96,6 +98,7 @@ namespace Mapperdom.Services
             map.Nations = state.Nations;
             map.Sides = state.Sides;
             map.Pixels = state.Pixels;
+            map.Fronts = state.Fronts;
 
             return map;
         }

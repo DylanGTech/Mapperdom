@@ -71,6 +71,14 @@
                     </Button>
                 </Border>
             </Grid>
+            <ComboBox Header="Color Templates" SelectedValue="{x:Bind ViewModel.SelectedTemplate, Mode=TwoWay}">
+                <ComboBox.Items>
+                    <x:String>Red</x:String>
+                    <x:String>Blue</x:String>
+                    <x:String>Yellow</x:String>
+                    <x:String>Purple</x:String>
+                </ComboBox.Items>
+            </ComboBox>
         </StackPanel>
         <StackPanel Visibility="{x:Bind ViewModel.PickSideVisibility, Mode=OneWay}">
             <ComboBox Header="Side to join" ItemsSource="{x:Bind ViewModel.SidesAvailable}" SelectedValue="{x:Bind ViewModel.SelectedWarSide, Mode=TwoWay}" DisplayMemberPath="Name"/>

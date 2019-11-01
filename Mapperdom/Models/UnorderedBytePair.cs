@@ -25,11 +25,16 @@ namespace Mapperdom.Models
             }
         }
 
-        public byte getSmallerByte()
+        public override bool Equals(object obj)
+        {
+            return typeof(UnorderedBytePair) == obj.GetType() && ((((UnorderedBytePair)obj).byte1 == byte1 && ((UnorderedBytePair)obj).byte2 == byte2) || (((UnorderedBytePair)obj).byte1 == byte2 && ((UnorderedBytePair)obj).byte2 == byte1));
+        }
+
+        public byte GetSmallerByte()
         {
             return byte1 > byte2 ? byte2 : byte1;
         }
-        public byte getLargerByte()
+        public byte GetLargerByte()
         {
             return byte1 < byte2 ? byte2 : byte1;
         }

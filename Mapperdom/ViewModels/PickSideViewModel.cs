@@ -99,6 +99,53 @@ namespace Mapperdom.ViewModels
                 return IsNewWarSide ? Visibility.Collapsed : Visibility.Visible;
             }
         }
+
+        private string _selectedTemplate;
+
+        public string SelectedTemplate
+        {
+            get
+            {
+                return _selectedTemplate;
+            }
+            set
+            {
+                Set(ref _selectedTemplate, value);
+
+                switch (_selectedTemplate)
+                {
+                    default:
+                        break;
+                    case "Red":
+                        NewWarSide.MainColor = System.Drawing.Color.FromArgb(0xff, 0x7d, 0x00, 0x00);
+                        NewWarSide.PuppetColor = System.Drawing.Color.FromArgb(0xff, 0xbf, 0x00, 0x00);
+                        NewWarSide.OccupiedColor = System.Drawing.Color.FromArgb(0xff, 0xff, 0x17, 0x17);
+                        NewWarSide.GainColor = System.Drawing.Color.FromArgb(0xff, 0xff, 0x80, 0x80);
+                        break;
+                    case "Blue":
+                        NewWarSide.MainColor = System.Drawing.Color.FromArgb(0xff, 0x00, 0x00, 0x7d);
+                        NewWarSide.PuppetColor = System.Drawing.Color.FromArgb(0xff, 0x00, 0x00, 0xbf);
+                        NewWarSide.OccupiedColor = System.Drawing.Color.FromArgb(0xff, 0x17, 0x17, 0xff);
+                        NewWarSide.GainColor = System.Drawing.Color.FromArgb(0xff, 0x80, 0x80, 0xff);
+                        break;
+                    case "Yellow":
+                        NewWarSide.MainColor = System.Drawing.Color.FromArgb(0xff, 0x7d, 0x7d, 0x00);
+                        NewWarSide.PuppetColor = System.Drawing.Color.FromArgb(0xff, 0xbf, 0xbf, 0x00);
+                        NewWarSide.OccupiedColor = System.Drawing.Color.FromArgb(0xff, 0xff, 0xff, 0x17);
+                        NewWarSide.GainColor = System.Drawing.Color.FromArgb(0xff, 0xff, 0xff, 0x80);
+                        break;
+                    case "Purple":
+                        NewWarSide.MainColor = System.Drawing.Color.FromArgb(0xff, 0x7d, 0x00, 0x7d);
+                        NewWarSide.PuppetColor = System.Drawing.Color.FromArgb(0xff, 0xbf, 0x00, 0xbf);
+                        NewWarSide.OccupiedColor = System.Drawing.Color.FromArgb(0xff, 0xff, 0x17, 0xff);
+                        NewWarSide.GainColor = System.Drawing.Color.FromArgb(0xff, 0xff, 0x80, 0xff);
+                        break;
+                }
+                OnPropertyChanged("NewWarSide");
+            }
+        }
+
+
         public PickSideViewModel(bool canJoinSide, ObservableCollection<WarSide> sidesList, Nation nation)
         {
             _canJoinSide = canJoinSide;

@@ -32,7 +32,7 @@ namespace Mapperdom.Models
 
         public Dictionary<UnorderedBytePair, sbyte> Fronts = new Dictionary<UnorderedBytePair, sbyte>();
 
-        public MapperGame(WriteableBitmap map, int? seed = null)
+        public MapperGame(WriteableBitmap map, int? seed = null, bool useCustomColors = false)
         {
             rng = seed != null ? new Random(seed.Value) : new Random();
 
@@ -48,6 +48,7 @@ namespace Mapperdom.Models
             Pixels = new PixelData[baseImage.PixelWidth, baseImage.PixelHeight];
 
             Sides = new Dictionary<byte, WarSide>();
+            Nations = new Dictionary<byte, Nation>();
 
             for (int y = 0; y < baseImage.PixelHeight; y++)
             {
@@ -62,39 +63,39 @@ namespace Mapperdom.Models
                         Pixels[x, y].IsOcean = true;
                     }
                     //Land
-                    else if (imageArray[4 * (y * baseImage.PixelWidth + x)] == 255 //Blue
-                             && imageArray[4 * (y * baseImage.PixelWidth + x) + 1] == 255 //Green
-                             && imageArray[4 * (y * baseImage.PixelWidth + x) + 2] == 255) //Red
+                    else
                     {
-                        Pixels[x, y].IsOcean = false;
-                        if(y < baseImage.PixelHeight / 2)
-                        {
-                            Pixels[x, y].OwnerId = 0;
-                            Pixels[x, y].OccupierId = 0;
+                        System.Drawing.Color c = System.Drawing.Color.FromArgb(imageArray[4 * (y * baseImage.PixelWidth + x)],
+                            imageArray[4 * (y * baseImage.PixelWidth + x) + 1],
+                            imageArray[4 * (y * baseImage.PixelWidth + x) + 2]);
 
+                        Nation foundNation = Nations.Values.FirstOrDefault(n => n.MainColor == c);
+
+                        if(foundNation != null)
+                        {
+                            byte id = Nations.First(kvp => kvp.Value == foundNation).Key;
+                            Pixels[x, y].IsOcean = false;
+                            Pixels[x, y].OwnerId = id;
+                            Pixels[x, y].OccupierId = id;
                         }
                         else
                         {
-                            Pixels[x, y].OwnerId = 1;
-                            Pixels[x, y].OccupierId = 1;
+                            byte id = (byte)Nations.Count;
+                            Nations.Add(id, new Nation("Nation " + id, c));
+                            Pixels[x, y].IsOcean = false;
+                            Pixels[x, y].OwnerId = id;
+                            Pixels[x, y].OccupierId = id;
                         }
                     }
-                    //Invalid
-                    else
-                        throw new Exception(
-                            $"Image composition contains invalid coloring: R:{imageArray[4 * (y * baseImage.PixelWidth + x) + 2]},G:{imageArray[4 * (y * baseImage.PixelWidth + x) + 1]},B:{imageArray[4 * (y * baseImage.PixelWidth + x)]}");
                 }
             }
 
-            Nations = new Dictionary<byte, Nation>();
+            if(!useCustomColors)
+            {
+                foreach (Nation n in Nations.Values)
+                    n.MainColor = System.Drawing.Color.FromArgb(int.Parse("31b305", System.Globalization.NumberStyles.HexNumber));
+            }
 
-            //Default nations
-            Nations.Add(0, new Nation("Rogopia", System.Drawing.Color.FromArgb(0x0000B33C)));
-            Nations.Add(1, new Nation("Mechadia", System.Drawing.Color.FromArgb(0x0000B33C)));
-            //nations.Add(1, new Nation("Mechadia"));
-
-            //sides.Add(0, new WarSide("Northerners", Nation.ColorFromHSL(0f, 0.6f, 0.5f)));
-            //sides.Add(1, new WarSide("Southerners", Nation.ColorFromHSL(120f, 0.6f, 0.5f)));
         }
 
 
@@ -174,8 +175,7 @@ namespace Mapperdom.Models
                         imageArray[4 * (y * baseImage.PixelWidth + x) + 2] = occupierSide.GainColor.R; // Red
                         //imageArray[4 * (y * baseImage.PixelWidth + x) + 3] = 0; // Opacity
                     }
-                    else if (officialNation.Master == null && officialNation == occupierNation
-                    ) //Nation controls its own territory and is not puppetted
+                    else if (officialNation.Master == null && officialSide == occupierSide) //Nation controls its own territory and is not puppetted
                     {
                         if (officialNation.IsSelected)
                         {
@@ -201,12 +201,21 @@ namespace Mapperdom.Models
                     }
                     else //Nation is occupied by another nation
                     {
-                        imageArray[4 * (y * baseImage.PixelWidth + x)] = occupierSide.OccupiedColor.B; // Blue
-                        imageArray[4 * (y * baseImage.PixelWidth + x) + 1] =
-                            occupierSide.OccupiedColor.G; // Green
-                        imageArray[4 * (y * baseImage.PixelWidth + x) + 2] =
-                            occupierSide.OccupiedColor.R; // Red
-                        //imageArray[4 * (y * baseImage.PixelWidth + x) + 3] = 0; // Opacity
+                        if (occupierNation.IsSelected)
+                        {
+                            imageArray[4 * (y * baseImage.PixelWidth + x)] = 191; // Blue
+                            imageArray[4 * (y * baseImage.PixelWidth + x) + 1] = 191; // Green
+                            imageArray[4 * (y * baseImage.PixelWidth + x) + 2] = 191; // Red
+                        }
+                        else
+                        {
+                            imageArray[4 * (y * baseImage.PixelWidth + x)] = occupierSide.OccupiedColor.B; // Blue
+                            imageArray[4 * (y * baseImage.PixelWidth + x) + 1] =
+                                occupierSide.OccupiedColor.G; // Green
+                            imageArray[4 * (y * baseImage.PixelWidth + x) + 2] =
+                                occupierSide.OccupiedColor.R; // Red
+                            //imageArray[4 * (y * baseImage.PixelWidth + x) + 3] = 0; // Opacity
+                        }
                     }
                 }
             }
@@ -233,14 +242,160 @@ namespace Mapperdom.Models
             }
             else
             {
-                foreach (KeyValuePair<byte, Nation> n in Nations) //Key is Nation ID, Value is the Nation object
+                //foreach (KeyValuePair<byte, Nation> n in Nations) //Key is Nation ID, Value is the Nation object
+                //{
+                //    //Nation.plan contains all the info passes to the "Expand" function when the turn is taken
+                //    Expand(n.Key, n.Value.plan);
+                //}
+
+                foreach(UnorderedBytePair ids in Fronts.Keys)
                 {
-                    //Nation.plan contains all the info passes to the "Expand" function when the turn is taken
-                    Expand(n.Key, n.Value.plan);
+                    GainTerritory(ids);
                 }
             }
 
             CheckForCollapse(); //Did a nation collapse?
+        }
+
+        public void GainTerritory(UnorderedBytePair nationIds)
+        {
+            //Nation is not at war. Cannot expand this way
+            if (!Nations[nationIds.GetSmallerByte()].WarSide.HasValue || !Nations[nationIds.GetLargerByte()].WarSide.HasValue)
+                return;
+
+            byte range = (byte)Math.Abs(Fronts[nationIds]);
+            byte attacker;
+            byte defender;
+
+            if (Fronts[nationIds] > 0)
+            {
+                attacker = nationIds.GetLargerByte();
+                defender = nationIds.GetSmallerByte();
+            }
+            else
+            {
+                attacker = nationIds.GetSmallerByte();
+                defender = nationIds.GetLargerByte();
+            }
+
+
+
+            Queue<Point> outline = new Queue<Point>();
+
+            GetCoastalPixels(attacker, ref outline);
+
+            while(outline.Count > 0)
+            {
+                Point p = outline.Dequeue();
+                if ((byte)rng.Next(0, 255) != 0) continue;
+
+
+                byte direction = (byte)rng.Next(0, 255);
+
+                if ((direction & (1 << 0)) != 0  && p.X > 0 && Pixels[p.X - 1, p.Y].IsOcean)
+                {
+                    AttemptRangedNavalLanding(nationIds, new Point(p.X - 1, p.Y),  -1, 0);
+                }
+                if ((direction & (1 << 0)) == 0 && p.X < Pixels.GetLength(0) - 1 && Pixels[p.X + 1, p.Y].IsOcean)
+                {
+                    AttemptRangedNavalLanding(nationIds, new Point(p.X + 1, p.Y), 1, 0);
+                }
+                if ((direction & (1 << 1)) != 0 && p.Y > 0 && Pixels[p.X, p.Y - 1].IsOcean)
+                {
+                    AttemptRangedNavalLanding(nationIds, new Point(p.X, p.Y - 1), 0, -1);
+                }
+                if ((direction & (1 << 1)) == 0 && p.Y < Pixels.GetLength(1) - 1 && Pixels[p.X, p.Y + 1].IsOcean)
+                {
+                    AttemptRangedNavalLanding(nationIds, new Point(p.X, p.Y + 1), 0, 1);
+                }
+            }
+
+
+            Queue<Point> bounds = new Queue<Point>();
+            Queue<Point> nextBounds = new Queue<Point>();
+
+            GetFront(attacker, defender, ref bounds);
+
+            if (Fronts[nationIds] == 0) return;
+
+            while (range > 0)
+            {
+                while (bounds.Count > 0)
+                {
+                    Point p = bounds.Dequeue();
+
+                    if (Pixels[p.X, p.Y].IsOcean) continue;
+                    byte friendlyNumber = 0; //The number of friendly Pixels surrounding it (sea, nation, or allied)
+
+                    if (p.X > 0)
+                    {
+                        if (Pixels[p.X - 1, p.Y].OccupierId == defender && !Pixels[p.X - 1, p.Y].IsOcean &&
+                            (byte)rng.Next(0, 255) % 8 == 0)
+                        {
+                            Pixels[p.X - 1, p.Y].OccupierId = attacker;
+                            nextBounds.Enqueue(new Point(p.X - 1, p.Y));
+                            Pixels[p.X - 1, p.Y].IsGained = true;
+                            friendlyNumber++;
+                        }
+                        else if (Pixels[p.X - 1, p.Y].IsOcean || Pixels[p.X - 1, p.Y].OccupierId == attacker)
+                            friendlyNumber++;
+
+                    }
+                    else friendlyNumber++;
+
+                    if (p.X < Pixels.GetLength(0) - 1)
+                    {
+                        if (Pixels[p.X + 1, p.Y].OccupierId == defender && !Pixels[p.X + 1, p.Y].IsOcean &&
+                            (byte)rng.Next(0, 255) % 8 == 0)
+                        {
+                            Pixels[p.X + 1, p.Y].OccupierId = attacker;
+                            nextBounds.Enqueue(new Point(p.X + 1, p.Y));
+                            Pixels[p.X + 1, p.Y].IsGained = true;
+                            friendlyNumber++;
+                        }
+                        else if (Pixels[p.X + 1, p.Y].IsOcean || Pixels[p.X + 1, p.Y].OccupierId == attacker)
+                            friendlyNumber++;
+                    }
+                    else friendlyNumber++;
+
+                    if (p.Y > 0)
+                    {
+                        if (Pixels[p.X, p.Y - 1].OccupierId == defender && !Pixels[p.X, p.Y - 1].IsOcean &&
+                            (byte)rng.Next(0, 255) % 8 == 0)
+                        {
+                            Pixels[p.X, p.Y - 1].OccupierId = attacker;
+                            nextBounds.Enqueue(new Point(p.X, p.Y - 1));
+                            Pixels[p.X, p.Y - 1].IsGained = true;
+                            friendlyNumber++;
+                        }
+                        else if (Pixels[p.X, p.Y - 1].IsOcean || Pixels[p.X, p.Y - 1].OccupierId == attacker)
+                            friendlyNumber++;
+                    }
+                    else friendlyNumber++;
+
+                    if (p.Y < Pixels.GetLength(1) - 1)
+                    {
+                        if (Pixels[p.X, p.Y + 1].OccupierId == defender && !Pixels[p.X, p.Y + 1].IsOcean &&
+                            (byte)rng.Next(0, 255) % 8 == 0)
+                        {
+                            Pixels[p.X, p.Y + 1].OccupierId = attacker;
+                            nextBounds.Enqueue(new Point(p.X, p.Y + 1));
+                            Pixels[p.X, p.Y + 1].IsGained = true;
+                            friendlyNumber++;
+                        }
+                        else if (Pixels[p.X, p.Y + 1].IsOcean || Pixels[p.X, p.Y + 1].OccupierId == attacker)
+                            friendlyNumber++;
+                    }
+                    else friendlyNumber++;
+
+                    //If not all Pixels are friendly, save this pixel for the next expansion
+                    if (friendlyNumber < 4) nextBounds.Enqueue(p);
+                }
+
+                range--;
+                bounds = nextBounds;
+                nextBounds = new Queue<Point>();
+            }
         }
 
         public void AnnexTerritory(byte nationId)
@@ -297,139 +452,8 @@ namespace Mapperdom.Models
             }
         }
 
-        public void Expand(byte ownerId, AttackInitiative plan)
-        {
-            //Nation is not at war. Cannot expand this way
-            if (!Nations[ownerId].WarSide.HasValue)
-                return;
 
 
-            Queue<Point> bounds = new Queue<Point>();
-            Queue<Point> nextBounds = new Queue<Point>();
-
-            if (plan.xFocus > 3) plan.xFocus = 3;
-            if (plan.xFocus < -3) plan.xFocus = -3;
-
-            if (plan.yFocus > 3) plan.yFocus = 3;
-            if (plan.yFocus < -3) plan.yFocus = -3;
-
-            WarSide ownerSide = Sides[Nations[ownerId].WarSide.Value];
-
-            GetBoundaryPixels(ownerId, ref bounds);
-            while (plan.range > 0)
-            {
-                while (bounds.Count > 0)
-                {
-                    Point p = bounds.Dequeue();
-
-                    if (Pixels[p.X, p.Y].IsOcean) continue;
-                    byte friendlyNumber = 0; //The number of friendly Pixels surrounding it (sea, nation, or allied)
-
-                    if (p.X > 0)
-                    {
-                        if (Pixels[p.X - 1, p.Y].OccupierId != ownerId && !Pixels[p.X - 1, p.Y].IsOcean &&
-                            Nations[Pixels[p.X - 1, p.Y].OccupierId].WarSide.HasValue &&
-                            Nations[Pixels[p.X - 1, p.Y].OccupierId].WarSide != Nations[ownerId].WarSide &&
-                            (byte) rng.Next(0, 255) % Math.Pow(4 + plan.xFocus, 2) == 0)
-                        {
-                            Pixels[p.X - 1, p.Y].OccupierId = ownerId;
-                            nextBounds.Enqueue(new Point(p.X - 1, p.Y));
-                            Pixels[p.X - 1, p.Y].IsGained = true;
-                            friendlyNumber++;
-                        }
-                        else if (Pixels[p.X - 1, p.Y].IsOcean || Pixels[p.X - 1, p.Y].OccupierId == ownerId)
-                            friendlyNumber++;
-
-                        if (plan.navalActivity && Pixels[p.X - 1, p.Y].IsOcean &&
-                            (byte) rng.Next(0, 255) % Math.Pow(4 + plan.xFocus, 2) == 0)
-                        {
-                            if (rng.Next(0, 4) == 0)
-                                AttemptNavalLanding(ownerId, new Point(p.X, p.Y), -1, 0);
-                        }
-                    }
-                    else friendlyNumber++;
-
-                    if (p.X < Pixels.GetLength(0) - 1)
-                    {
-                        if (Pixels[p.X + 1, p.Y].OccupierId != ownerId && !Pixels[p.X + 1, p.Y].IsOcean &&
-                            Nations[Pixels[p.X + 1, p.Y].OccupierId].WarSide.HasValue &&
-                            Nations[Pixels[p.X + 1, p.Y].OccupierId].WarSide != Nations[ownerId].WarSide &&
-                            (byte) rng.Next(0, 255) % Math.Pow(4 - plan.xFocus, 2) == 0)
-                        {
-                            Pixels[p.X + 1, p.Y].OccupierId = ownerId;
-                            nextBounds.Enqueue(new Point(p.X + 1, p.Y));
-                            Pixels[p.X + 1, p.Y].IsGained = true;
-                            friendlyNumber++;
-                        }
-                        else if (Pixels[p.X + 1, p.Y].IsOcean || Pixels[p.X + 1, p.Y].OccupierId == ownerId)
-                            friendlyNumber++;
-
-                        if (plan.navalActivity && Pixels[p.X + 1, p.Y].IsOcean &&
-                            (byte) rng.Next(0, 255) % Math.Pow(4 + plan.xFocus, 2) == 0)
-                        {
-                            if (rng.Next(0, 4) == 0)
-                                AttemptNavalLanding(ownerId, new Point(p.X, p.Y), 1, 0);
-                        }
-                    }
-                    else friendlyNumber++;
-
-                    if (p.Y > 0)
-                    {
-                        if (Pixels[p.X, p.Y - 1].OccupierId != ownerId && !Pixels[p.X, p.Y - 1].IsOcean &&
-                            Nations[Pixels[p.X, p.Y - 1].OccupierId].WarSide.HasValue &&
-                            Nations[Pixels[p.X, p.Y - 1].OccupierId].WarSide != Nations[ownerId].WarSide &&
-                            (byte) rng.Next(0, 255) % Math.Pow(4 + plan.yFocus, 2) == 0)
-                        {
-                            Pixels[p.X, p.Y - 1].OccupierId = ownerId;
-                            nextBounds.Enqueue(new Point(p.X, p.Y - 1));
-                            Pixels[p.X, p.Y - 1].IsGained = true;
-                            friendlyNumber++;
-                        }
-                        else if (Pixels[p.X, p.Y - 1].IsOcean || Pixels[p.X, p.Y - 1].OccupierId == ownerId)
-                            friendlyNumber++;
-
-                        if (plan.navalActivity && Pixels[p.X, p.Y - 1].IsOcean &&
-                            (byte) rng.Next(0, 255) % Math.Pow(4 + plan.yFocus, 2) == 0)
-                        {
-                            if (rng.Next(0, 4) == 0)
-                                AttemptNavalLanding(ownerId, new Point(p.X, p.Y), 0, -1);
-                        }
-                    }
-                    else friendlyNumber++;
-
-                    if (p.Y < Pixels.GetLength(1) - 1)
-                    {
-                        if (Pixels[p.X, p.Y + 1].OccupierId != ownerId && !Pixels[p.X, p.Y + 1].IsOcean &&
-                            Nations[Pixels[p.X, p.Y + 1].OccupierId].WarSide.HasValue &&
-                            Nations[Pixels[p.X, p.Y + 1].OccupierId].WarSide != Nations[ownerId].WarSide &&
-                            (byte) rng.Next(0, 255) % Math.Pow(4 - plan.yFocus, 2) == 0)
-                        {
-                            Pixels[p.X, p.Y + 1].OccupierId = ownerId;
-                            nextBounds.Enqueue(new Point(p.X, p.Y + 1));
-                            Pixels[p.X, p.Y + 1].IsGained = true;
-                            friendlyNumber++;
-                        }
-                        else if (Pixels[p.X, p.Y + 1].IsOcean || Pixels[p.X, p.Y + 1].OccupierId == ownerId)
-                            friendlyNumber++;
-
-                        if (plan.navalActivity && Pixels[p.X, p.Y + 1].IsOcean &&
-                            (byte) rng.Next(0, 255) % Math.Pow(4 + plan.yFocus, 2) == 0)
-                        {
-                            if (rng.Next(0, 4) == 0)
-                                AttemptNavalLanding(ownerId, new Point(p.X, p.Y), 0, 1);
-                        }
-                    }
-                    else friendlyNumber++;
-
-                    //If not all Pixels are friendly, save this pixel for the next expansion
-                    if (friendlyNumber < 4) nextBounds.Enqueue(p);
-                }
-
-                plan.range--;
-                bounds = nextBounds;
-                nextBounds = new Queue<Point>();
-            }
-        }
 
         public void Surrender(byte destroyedNationId, byte destroyerNationId, bool realisticSurrender)
         {
@@ -597,6 +621,7 @@ namespace Mapperdom.Models
             }
         }
 
+
         private void GetFrontalPixels(byte owner, ref Queue<Point> bounds)
         {
             for (int y = 0; y < Pixels.GetLength(1); y++)
@@ -624,6 +649,76 @@ namespace Mapperdom.Models
                     }
 
                     if (y < Pixels.GetLength(1) - 1 && !Pixels[x, y + 1].IsOcean && Pixels[x, y + 1].OccupierId == owner)
+                    {
+                        bounds.Enqueue(new Point(x, y));
+                        continue;
+                    }
+                }
+            }
+        }
+
+        private void GetCoastalPixels(byte owner, ref Queue<Point> bounds)
+        {
+            for (int y = 0; y < Pixels.GetLength(1); y++)
+            {
+                for (int x = 0; x < Pixels.GetLength(0); x++)
+                {
+                    if (Pixels[x, y].IsOcean) continue;
+                    if (Pixels[x, y].OccupierId != owner) continue;
+
+                    if (x > 0 && Pixels[x - 1, y].IsOcean)
+                    {
+                        bounds.Enqueue(new Point(x, y));
+                        continue;
+                    }
+
+                    if (x < Pixels.GetLength(0) - 1 && Pixels[x + 1, y].IsOcean)
+                    {
+                        bounds.Enqueue(new Point(x, y));
+                        continue;
+                    }
+
+                    if (y > 0 && Pixels[x, y - 1].IsOcean)
+                    {
+                        bounds.Enqueue(new Point(x, y));
+                        continue;
+                    }
+
+                    if (y < Pixels.GetLength(1) - 1 && Pixels[x, y + 1].IsOcean)
+                    {
+                        bounds.Enqueue(new Point(x, y));
+                        continue;
+                    }
+                }
+            }
+        }
+
+        private void GetFront(byte nation1, byte nation2, ref Queue<Point> bounds)
+        {
+            for (int y = 0; y < Pixels.GetLength(1); y++)
+            {
+                for (int x = 0; x < Pixels.GetLength(0); x++)
+                {
+                    if (Pixels[x, y].IsOcean || Pixels[x, y].OccupierId != nation1) continue;
+                    if (x > 0 && !Pixels[x - 1, y].IsOcean && Pixels[x - 1, y].OccupierId == nation2)
+                    {
+                        bounds.Enqueue(new Point(x, y));
+                        continue;
+                    }
+
+                    if (x < Pixels.GetLength(0) - 1 && !Pixels[x + 1, y].IsOcean && Pixels[x + 1, y].OccupierId == nation2)
+                    {
+                        bounds.Enqueue(new Point(x, y));
+                        continue;
+                    }
+
+                    if (y > 0 && !Pixels[x, y - 1].IsOcean && Pixels[x, y - 1].OccupierId == nation2)
+                    {
+                        bounds.Enqueue(new Point(x, y));
+                        continue;
+                    }
+
+                    if (y < Pixels.GetLength(0) - 1 && !Pixels[x, y + 1].IsOcean && Pixels[x, y + 1].OccupierId == nation2)
                     {
                         bounds.Enqueue(new Point(x, y));
                         continue;
@@ -666,6 +761,46 @@ namespace Mapperdom.Models
                 }
             }
         }
+
+        private void AttemptRangedNavalLanding(UnorderedBytePair nationIds, Point p, sbyte xDir, sbyte yDir)
+        {
+            if (xDir > 1) xDir = 1;
+            else if (xDir < -1) xDir = -1;
+            if (yDir > 1) yDir = 1;
+            else if (yDir < -1) yDir = -1;
+
+            byte range = (byte)Math.Abs(Fronts[nationIds]);
+            byte attacker;
+            byte defender;
+
+            if (Fronts[nationIds] > 0)
+            {
+                attacker = nationIds.GetLargerByte();
+                defender = nationIds.GetSmallerByte();
+            }
+            else
+            {
+                attacker = nationIds.GetSmallerByte();
+                defender = nationIds.GetLargerByte();
+            }
+
+
+            while (p.X > 0 && p.Y > 0 && p.X < Pixels.GetLength(0) - 1 && p.Y < Pixels.GetLength(1) - 1 && range > 0)
+            {
+                p.X += xDir;
+                p.Y += yDir;
+                range--;
+
+                if (Pixels[p.X, p.Y].IsOcean) continue;
+                if(Pixels[p.X, p.Y].OccupierId == defender)
+                    Pixels[p.X, p.Y].OccupierId = attacker;
+                break;
+            }
+        }
+
+
+
+
 
         private void AttemptNavalLanding(byte conqueror, Point p, sbyte xDir, sbyte yDir)
         {
@@ -756,8 +891,8 @@ namespace Mapperdom.Models
             }
 
 
-            PreviousStates.AddLast(new MapState((PixelData[,])Pixels.Clone(), clonedNations, clonedSides));
 
+            PreviousStates.AddLast(new MapState((PixelData[,])Pixels.Clone(), clonedNations, clonedSides, new Dictionary<UnorderedBytePair, sbyte>(Fronts)));
             PreviousStatesPosition = (byte)(PreviousStates.Count);
         }
 
@@ -794,14 +929,15 @@ namespace Mapperdom.Models
 
             if(!Nations[nation1Id].WarSide.HasValue)
             {
-                if(!Sides.ContainsValue(nation1Side))
+                if (!Sides.ContainsValue(nation1Side))
                 {
                     while (Sides.ContainsKey(newWarSideId)) newWarSideId++;
 
                     Sides.Add(newWarSideId, nation1Side);
-                }
 
-                Nations[nation1Id].WarSide = newWarSideId;
+                    Nations[nation1Id].WarSide = newWarSideId;
+                }
+                else Nations[nation1Id].WarSide = Sides.First(kvp => kvp.Value == nation1Side).Key;
             }
             if (!Nations[nation2Id].WarSide.HasValue)
             {
@@ -810,9 +946,10 @@ namespace Mapperdom.Models
                     while (Sides.ContainsKey(newWarSideId)) newWarSideId++;
 
                     Sides.Add(newWarSideId, nation2Side);
-                }
 
-                Nations[nation2Id].WarSide = newWarSideId;
+                    Nations[nation2Id].WarSide = newWarSideId;
+                }
+                else Nations[nation2Id].WarSide = Sides.First(kvp => kvp.Value == nation2Side).Key;
             }
 
             CleanFronts();
@@ -876,11 +1013,12 @@ namespace Mapperdom.Models
             byte newWarSideId = 0;
 
             while (Nations.ContainsKey(newNationId)) newNationId++;
+            Nations.Add(newNationId, rebels);
+
             if (!Sides.ContainsValue(rebelSide))
             {
                 while (Sides.ContainsKey(newWarSideId)) newWarSideId++;
 
-                Nations.Add(newNationId, rebels);
                 if (!Sides.ContainsValue(rebelSide)) Sides.Add(newWarSideId, rebelSide);
                 Nations[newNationId].WarSide = newWarSideId;
             }
@@ -917,7 +1055,7 @@ namespace Mapperdom.Models
             foreach(UnorderedBytePair pair in Fronts.Keys.ToList())
             {
                 //If a nation was remove, a nation is not at war or nations wind up on the same side, throw out their values
-                if(!(Nations.ContainsKey(pair.getSmallerByte()) && Nations.ContainsKey(pair.getLargerByte())) || !(Nations[pair.getSmallerByte()].WarSide.HasValue && Nations[pair.getLargerByte()].WarSide.HasValue) || Nations[pair.getSmallerByte()].WarSide == Nations[pair.getLargerByte()].WarSide)
+                if(!(Nations.ContainsKey(pair.GetSmallerByte()) && Nations.ContainsKey(pair.GetLargerByte())) || !(Nations[pair.GetSmallerByte()].WarSide.HasValue || Nations[pair.GetLargerByte()].WarSide.HasValue) || Nations[pair.GetSmallerByte()].WarSide == Nations[pair.GetLargerByte()].WarSide)
                 {
                     Fronts.Remove(pair);
                 }
@@ -929,7 +1067,7 @@ namespace Mapperdom.Models
                 {
                     if (p1.Equals(p2)) continue;
                     if (Fronts.ContainsKey(new UnorderedBytePair(p1.Key, p2.Key)) || Fronts.ContainsKey(new UnorderedBytePair(p2.Key, p1.Key))) continue;
-                    else Fronts.Add(new UnorderedBytePair(p1.Key, p2.Key), 0);
+                    if(p1.Value.WarSide != p2.Value.WarSide && p1.Value.WarSide.HasValue && p2.Value.WarSide.HasValue) Fronts.Add(new UnorderedBytePair(p1.Key, p2.Key), 0);
                 }
             }
         }

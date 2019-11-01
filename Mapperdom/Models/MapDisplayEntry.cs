@@ -1,5 +1,6 @@
 ﻿using Mapperdom;
 using Mapperdom.Helpers;
+using Mapperdom.ViewModels;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Windows.UI.Xaml.Media;
@@ -8,6 +9,7 @@ namespace Mapperdom.Models
 {
     public class MapDisplayEntry : Observable
     {
+        public readonly MainViewModel ViewModel;
 
         private Nation _nation;
         public Nation Nation
@@ -66,7 +68,7 @@ namespace Mapperdom.Models
             }
         }
 
-        public MapDisplayEntry(Nation nation, WarSide ws)
+        public MapDisplayEntry(Nation nation, WarSide ws, MainViewModel viewModelReference)
         {
             this.Nation = nation;
             if (ws != null)

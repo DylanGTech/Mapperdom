@@ -13,16 +13,14 @@ namespace Mapperdom.Models
 
         private UnorderedBytePair pair;
 
-        private Nation _nation1;
         public Nation Nation1
         {
-            get { return gameReference.Nations[pair.getSmallerByte()]; }
+            get { return gameReference.Nations[pair.GetSmallerByte()]; }
         }
 
-        private Nation _nation2;
         public Nation Nation2
         {
-            get { return gameReference.Nations[pair.getLargerByte()]; }
+            get { return gameReference.Nations[pair.GetLargerByte()]; }
         }
 
         public sbyte Strength
