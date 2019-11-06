@@ -81,7 +81,7 @@ namespace Mapperdom.Models
             }
             else
             {
-                Brush neutralBrush = new SolidColorBrush(Windows.UI.Color.FromArgb(0xff, 0x00, 0xB3, 0x3C));
+                Brush neutralBrush = new SolidColorBrush(Windows.UI.Color.FromArgb(0xff, nation.MainColor.R, nation.MainColor.G, nation.MainColor.B));
                 SideName = "Neutral";
                 MainBrush = neutralBrush;
                 PuppetBrush = neutralBrush;
@@ -90,7 +90,7 @@ namespace Mapperdom.Models
             }
         }
 
-        public void Update(WarSide ws)
+        public void Update(Nation nation, WarSide ws)
         {
             if (ws != null)
             {
@@ -102,7 +102,7 @@ namespace Mapperdom.Models
             }
             else
             {
-                Brush neutralBrush = new SolidColorBrush(Windows.UI.Color.FromArgb(0xff, 0x00, 0xB3, 0x3C));
+                Brush neutralBrush = new SolidColorBrush(Windows.UI.Color.FromArgb(0xff, nation.MainColor.R, nation.MainColor.G, nation.MainColor.B));
                 Set(ref _sideName, "Neutral", "SideName");
                 Set(ref _mainBrush, neutralBrush, "MainBrush");
                 Set(ref _puppetBrush, neutralBrush, "PuppetBrush");

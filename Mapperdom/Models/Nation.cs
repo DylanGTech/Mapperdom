@@ -20,6 +20,20 @@ namespace Mapperdom.Models
             }
         }
 
+        private bool _isSurrendered;
+
+        public bool IsSurrendered
+        {
+            get
+            {
+                return _isSurrendered;
+            }
+            set
+            {
+                Set(ref _isSurrendered, value);
+            }
+        }
+
 
         private string _name;
         public string Name

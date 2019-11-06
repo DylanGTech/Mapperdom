@@ -306,7 +306,7 @@ namespace Mapperdom.ViewModels
                         res = await d1.ShowAsync();
 
                         //Start new game if selected
-                        if (res != Windows.UI.Xaml.Controls.ContentDialogResult.Secondary && d1.ViewModel.Map != null)
+                        if (res == Windows.UI.Xaml.Controls.ContentDialogResult.Secondary && d1.ViewModel.Map != null)
                         {
                             try
                             {
@@ -759,7 +759,7 @@ namespace Mapperdom.ViewModels
                     foreach (Nation nat in currentNationList)
                     {
                         MapDisplayEntry entry = MapEntries.First(e => e.Nation == nat);
-                        entry.Update(nat.WarSide.HasValue ? ReferencedGame.Sides[nat.WarSide.Value] : null);
+                        entry.Update(nat, nat.WarSide.HasValue ? ReferencedGame.Sides[nat.WarSide.Value] : null);
                     }
                 }
             }

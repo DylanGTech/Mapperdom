@@ -177,11 +177,17 @@ namespace Mapperdom.Models
                     }
                     else if (officialNation.Master == null && officialSide == occupierSide) //Nation controls its own territory and is not puppetted
                     {
-                        if (officialNation.IsSelected)
+                        if (officialNation.IsSelected && !officialNation.IsSurrendered)
                         {
                             imageArray[4 * (y * baseImage.PixelWidth + x)] = 255; // Blue
                             imageArray[4 * (y * baseImage.PixelWidth + x) + 1] = 255; // Green
                             imageArray[4 * (y * baseImage.PixelWidth + x) + 2] = 255; // Red
+                        }
+                        else if(officialNation.IsSurrendered)
+                        {
+                            imageArray[4 * (y * baseImage.PixelWidth + x)] = occupierSide.OccupiedColor.B; // Blue
+                            imageArray[4 * (y * baseImage.PixelWidth + x) + 1] = occupierSide.OccupiedColor.G; // Green
+                            imageArray[4 * (y * baseImage.PixelWidth + x) + 2] = occupierSide.OccupiedColor.R; // Red
                         }
                         else
                         {
@@ -457,6 +463,10 @@ namespace Mapperdom.Models
 
         public void Surrender(byte destroyedNationId, byte destroyerNationId, bool realisticSurrender)
         {
+            if (Nations[destroyedNationId].IsSurrendered)
+                return;
+            Nations[destroyedNationId].IsSurrendered = true;
+
             if(!realisticSurrender)
             {
                 for (int y = 0; y < Pixels.GetLength(1); y++)
@@ -483,46 +493,46 @@ namespace Mapperdom.Models
 
                     if (p.X > 0 && Pixels[p.X - 1, p.Y].OccupierId == destroyedNationId)
                     {
-                        if(!Pixels[p.X, p.Y].IsOcean && Nations[Pixels[p.X, p.Y].OccupierId].WarSide.HasValue && Nations[Pixels[p.X, p.Y].OccupierId].WarSide != Nations[destroyedNationId].WarSide)
-                            Pixels[p.X - 1, p.Y].OccupierId = Pixels[p.X, p.Y].OccupierId;
-                        else Pixels[p.X - 1, p.Y].OccupierId = destroyerNationId;
+                            if (!Pixels[p.X, p.Y].IsOcean && Nations[Pixels[p.X, p.Y].OccupierId].WarSide.HasValue && Nations[Pixels[p.X, p.Y].OccupierId].WarSide != Nations[destroyedNationId].WarSide)
+                                Pixels[p.X - 1, p.Y].OccupierId = Pixels[p.X, p.Y].OccupierId;
+                            else Pixels[p.X - 1, p.Y].OccupierId = destroyerNationId;
 
-                        Pixels[p.X - 1, p.Y].IsGained = true;
+                            Pixels[p.X - 1, p.Y].IsGained = true;
 
-                        bounds.Enqueue(new Point(p.X - 1, p.Y));
+                            bounds.Enqueue(new Point(p.X - 1, p.Y));
                     }
 
                     if (p.X < Pixels.GetLength(0) - 1 && Pixels[p.X + 1, p.Y].OccupierId == destroyedNationId)
                     {
-                        if (!Pixels[p.X, p.Y].IsOcean && Nations[Pixels[p.X, p.Y].OccupierId].WarSide.HasValue && Nations[Pixels[p.X, p.Y].OccupierId].WarSide != Nations[destroyedNationId].WarSide)
-                            Pixels[p.X + 1, p.Y].OccupierId = Pixels[p.X, p.Y].OccupierId;
-                        else Pixels[p.X + 1, p.Y].OccupierId = destroyerNationId;
+                            if (!Pixels[p.X, p.Y].IsOcean && Nations[Pixels[p.X, p.Y].OccupierId].WarSide.HasValue && Nations[Pixels[p.X, p.Y].OccupierId].WarSide != Nations[destroyedNationId].WarSide)
+                                Pixels[p.X + 1, p.Y].OccupierId = Pixels[p.X, p.Y].OccupierId;
+                            else Pixels[p.X + 1, p.Y].OccupierId = destroyerNationId;
 
-                        Pixels[p.X + 1, p.Y].IsGained = true;
+                            Pixels[p.X + 1, p.Y].IsGained = true;
 
-                        bounds.Enqueue(new Point(p.X + 1, p.Y));
+                            bounds.Enqueue(new Point(p.X + 1, p.Y));
                     }
 
                     if (p.Y > 0 && Pixels[p.X, p.Y - 1].OccupierId == destroyedNationId)
                     {
-                        if (!Pixels[p.X, p.Y].IsOcean && Nations[Pixels[p.X, p.Y].OccupierId].WarSide.HasValue && Nations[Pixels[p.X, p.Y].OccupierId].WarSide != Nations[destroyedNationId].WarSide)
-                            Pixels[p.X, p.Y - 1].OccupierId = Pixels[p.X, p.Y].OccupierId;
-                        else Pixels[p.X, p.Y - 1].OccupierId = destroyerNationId;
+                            if (!Pixels[p.X, p.Y].IsOcean && Nations[Pixels[p.X, p.Y].OccupierId].WarSide.HasValue && Nations[Pixels[p.X, p.Y].OccupierId].WarSide != Nations[destroyedNationId].WarSide)
+                                Pixels[p.X, p.Y - 1].OccupierId = Pixels[p.X, p.Y].OccupierId;
+                            else Pixels[p.X, p.Y - 1].OccupierId = destroyerNationId;
 
-                        Pixels[p.X, p.Y - 1].IsGained = true;
+                            Pixels[p.X, p.Y - 1].IsGained = true;
 
-                        bounds.Enqueue(new Point(p.X, p.Y - 1));
+                            bounds.Enqueue(new Point(p.X, p.Y - 1));
                     }
 
                     if (p.Y < Pixels.GetLength(1) - 1 && Pixels[p.X, p.Y + 1].OccupierId == destroyedNationId)
                     {
-                        if (Pixels[p.X, p.Y].IsGained && Nations[Pixels[p.X, p.Y].OccupierId].WarSide.HasValue && Nations[Pixels[p.X, p.Y].OccupierId].WarSide != Nations[destroyedNationId].WarSide)
-                            Pixels[p.X, p.Y + 1].OccupierId = Pixels[p.X, p.Y].OccupierId;
-                        else Pixels[p.X, p.Y + 1].OccupierId = destroyerNationId;
+                            if (!Pixels[p.X, p.Y].IsOcean && Nations[Pixels[p.X, p.Y].OccupierId].WarSide.HasValue && Nations[Pixels[p.X, p.Y].OccupierId].WarSide != Nations[destroyedNationId].WarSide)
+                                Pixels[p.X, p.Y + 1].OccupierId = Pixels[p.X, p.Y].OccupierId;
+                            else Pixels[p.X, p.Y + 1].OccupierId = destroyerNationId;
 
-                        Pixels[p.X, p.Y + 1].IsGained = true;
+                            Pixels[p.X, p.Y + 1].IsGained = true;
 
-                        bounds.Enqueue(new Point(p.X, p.Y + 1));
+                            bounds.Enqueue(new Point(p.X, p.Y + 1));
                     }
                 }
 
