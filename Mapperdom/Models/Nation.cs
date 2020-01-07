@@ -5,7 +5,6 @@ namespace Mapperdom.Models
 {
     public class Nation : Observable, ICloneable
     {
-
         public bool _isSelected;
 
         public bool IsSelected
@@ -87,13 +86,54 @@ namespace Mapperdom.Models
             }
         }
 
+        private int _labelPosX;
+        public int LabelPosX
+        {
+            get
+            {
+                return _labelPosX;
+            }
+            set
+            {
+                Set(ref _labelPosX, value);
+            }
+        }
 
-        public Nation(string name, System.Drawing.Color mainColor, byte? warSide = null, Nation master = null)
+        private int _labelPosY;
+        public int LabelPosY
+        {
+            get
+            {
+                return _labelPosY;
+            }
+            set
+            {
+                Set(ref _labelPosY, value);
+            }
+        }
+
+
+        private int _labelFontSize;
+        public int LabelFontSize
+        {
+            get
+            {
+                return _labelFontSize;
+            }
+            set
+            {
+                Set(ref _labelFontSize, value);
+            }
+        }
+
+        public Nation(string name, System.Drawing.Color mainColor, byte? warSide = null, Nation master = null, int labelPosX = 0, int labelPosY = 0)
         {
             Name = name;
             Master = master;
             WarSide = warSide;
             MainColor = mainColor;
+            LabelPosX = labelPosX;
+            LabelPosY = labelPosY;
         }
 
         public static System.Drawing.Color ColorFromHsl(float hue, float saturation, float brightness)
@@ -150,6 +190,7 @@ namespace Mapperdom.Models
             return System.Drawing.Color.FromArgb((byte)((r + m) * 255), (byte)((g + m) * 255),
                 (byte)((b + m) * 255));
         }
+
 
         public object Clone()
         {

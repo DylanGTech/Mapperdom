@@ -22,7 +22,6 @@ namespace Mapperdom.Views
 {
     public sealed partial class PickSideDialog : ContentDialog
     {
-        public MainViewModel OriginalViewModel { get; } = new MainViewModel();
         public PickSideViewModel ViewModel { get; }
         public PickSideDialog(MainViewModel originalViewModel, bool canJoinSide, ObservableCollection<WarSide> sidesList, Nation nation)
         {

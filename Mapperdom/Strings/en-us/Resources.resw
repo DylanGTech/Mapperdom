@@ -216,10 +216,10 @@
   <data name="WhatsNew_Body.Text" xml:space="preserve">
     <value>Beta Preview Release
 
-- Custom national borders can be uploaded when creating a new project
-- Maps can now be multicolored or the default (green) color
-- Surrendered nations now show up as occupied (even if by their own side)
-- Fixed issues related to surrendering and weird borders
+- Added the ability to manually change borders through an editable image
+- Added basic labeling system
+- Added ability to "white peace" and withdraw from war
+- Fixed undo/redo issues
 
 COMPATABILITY NOTICE: Beta versions are not guarenteed to work as expected. Updates to Beta versions may break earlier projects that are saved. It is not recommended to create long-term projects with Beta versions of Mapperdom, and please report any bugs you encounter</value>
     <comment>What's new prompt message body</comment>

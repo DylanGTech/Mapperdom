@@ -2,7 +2,6 @@
 using Mapperdom.ViewModels;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
@@ -20,15 +19,13 @@ using Windows.UI.Xaml.Navigation;
 
 namespace Mapperdom.Views
 {
-    public sealed partial class PickNationDialog : ContentDialog
+    public sealed partial class ChangeBordersDialog : ContentDialog
     {
-        public MainViewModel OriginalViewModel { get; }
-        public PickNationViewModel ViewModel { get; }
-        public PickNationDialog(MainViewModel originalViewModel, ObservableCollection<Nation> nationsList, Nation nation)
+        public ChangeBordersViewModel ViewModel;
+        public ChangeBordersDialog(MapperGame game)
         {
             this.InitializeComponent();
-            OriginalViewModel = originalViewModel;
-            ViewModel = new PickNationViewModel(nationsList, nation);
+            ViewModel = new ChangeBordersViewModel(game);
         }
     }
 }

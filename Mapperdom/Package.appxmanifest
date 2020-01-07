@@ -10,7 +10,7 @@
   <Identity
     Name="23378DylanGreen.Mapperdom"
     Publisher="CN=50F62EB6-0A43-4B31-9F65-74BD4F895F36"
-    Version="1.0.2.0" />
+    Version="1.0.3.0" />
 
   <mp:PhoneIdentity PhoneProductId="a315b389-3154-4c80-89b8-535e96eaafde" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 

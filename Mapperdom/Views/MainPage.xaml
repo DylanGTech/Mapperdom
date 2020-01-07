@@ -46,12 +46,12 @@
                 </MenuFlyoutItem>
             </MenuBarItem>
             <MenuBarItem Title="Edit">
-                <MenuFlyoutItem Text="Undo" Command="{x:Bind ViewModel.UndoCommand}" IsEnabled="{x:Bind ViewModel.IsActiveGame, Mode=OneWay}">
+                <MenuFlyoutItem Text="Undo" Command="{x:Bind ViewModel.UndoCommand}" IsEnabled="{x:Bind ViewModel.CanUndo, Mode=OneWay}">
                     <MenuFlyoutItem.Icon>
                         <SymbolIcon Symbol="Undo"/>
                     </MenuFlyoutItem.Icon>
                 </MenuFlyoutItem>
-                <MenuFlyoutItem Text="Redo" Command="{x:Bind ViewModel.RedoCommand}" IsEnabled="{x:Bind ViewModel.IsActiveGame, Mode=OneWay}">
+                <MenuFlyoutItem Text="Redo" Command="{x:Bind ViewModel.RedoCommand}" IsEnabled="{x:Bind ViewModel.CanRedo, Mode=OneWay}">
                     <MenuFlyoutItem.Icon>
                         <SymbolIcon Symbol="Redo"/>
                     </MenuFlyoutItem.Icon>
@@ -60,10 +60,15 @@
 
         </MenuBar>
 
-        <Image Source="{x:Bind ViewModel.SourceImage, Mode=OneWay}" Grid.Row="1" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        <Viewbox Stretch="Uniform"  HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="1" Grid.Column="0">
+            <Canvas x:Name="mapCanvas" Width="{x:Bind ViewModel.SourceImage.PixelWidth, Mode=OneWay}" Height="{x:Bind ViewModel.SourceImage.PixelHeight, Mode=OneWay}">
+                <Image Source="{x:Bind ViewModel.SourceImage, Mode=OneWay}" Canvas.ZIndex="0"/>
+            </Canvas>
+        </Viewbox>
         <ScrollViewer Grid.Row="1" Grid.Column="1" HorizontalScrollBarVisibility="Disabled">
             <StackPanel>
                 <Button IsEnabled="{x:Bind ViewModel.IsActiveGame, Mode=OneWay}" HorizontalAlignment="Center" Content="Step Forward" Command="{x:Bind ViewModel.ExecutePlanCommand}" Margin="8"/>
+                <Button IsEnabled="{x:Bind ViewModel.IsActiveGame, Mode=OneWay}" HorizontalAlignment="Center" Content="Change Borders" Command="{x:Bind ViewModel.ChangeBordersCommand}" Margin="8"/>
 
                 <StackPanel Visibility="{x:Bind ViewModel.TreatyOptionsVisibility, Mode=OneWay}">
                     <Button IsEnabled="{x:Bind ViewModel.SelectedNationIsAtWar, Mode=OneWay}" HorizontalAlignment="Center" Content="Withdraw from War" Command="{x:Bind ViewModel.WithdrawFromWarCommand}" Margin="8"/>
@@ -102,6 +107,7 @@
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                     <Button IsEnabled="{x:Bind ViewModel.SelectedNationIsAtWar, Mode=OneWay}" HorizontalAlignment="Center" Content="Annex Occupation" Command="{x:Bind ViewModel.AnnexOccupationCommand}" Margin="8"/>
                     <Button IsEnabled="{x:Bind ViewModel.SelectedNationIsAtWar, Mode=OneWay}" HorizontalAlignment="Center" Content="Surrender" Command="{x:Bind ViewModel.SurrenderCommand}" Margin="8"/>
+                    <Button IsEnabled="{x:Bind ViewModel.SelectedNationIsAtWar, Mode=OneWay}" HorizontalAlignment="Center" Content="White Peace" Command="{x:Bind ViewModel.WhitePeaceCommand}" Margin="8"/>
                 </StackPanel>
 
                 <CheckBox IsEnabled="{x:Bind ViewModel.IsActiveGame, Mode=OneWay}" IsChecked="{x:Bind ViewModel.IsTreatyMode, Mode=TwoWay}" Content="Treaty Mode" HorizontalAlignment="Center"/>

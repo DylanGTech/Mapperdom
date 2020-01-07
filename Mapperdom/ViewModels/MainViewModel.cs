@@ -23,12 +23,15 @@ using Windows.UI.Popups;
 using Windows.UI.Xaml;
 using System.Text;
 using Windows.UI.Core;
+using Windows.UI;
 
 namespace Mapperdom.ViewModels
 {
     public class MainViewModel : Observable
     {
         private readonly CoreDispatcher dispatcher;
+        private readonly Canvas mapCanvas;
+
         private async Task OnUiThread(Action action)
         {
             await this.dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => action());
@@ -38,6 +41,20 @@ namespace Mapperdom.ViewModels
             await this.dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => await action());
         }
 
+        public bool CanUndo
+        {
+            get
+            {
+                return ReferencedGame != null && ReferencedGame.CanUndo;
+            }
+        }
+        public bool CanRedo
+        {
+            get
+            {
+                return ReferencedGame != null && ReferencedGame.CanRedo;
+            }
+        }
 
         public bool CanLoad
         {
@@ -207,13 +224,32 @@ namespace Mapperdom.ViewModels
                     _executePlanCommand = new RelayCommand(() =>
                     {
                         ReferencedGame.Advance();
-                        SourceImage = ReferencedGame.GetCurrentMap();
+                        UpdateMapAsync();
                         ReferencedGame.Backup();
                     });
 
                 return _executePlanCommand;
             }
         }
+
+        private ICommand _whitePeaceCommand;
+        public ICommand WhitePeaceCommand
+        {
+            get
+            {
+                if (_whitePeaceCommand == null)
+                    _whitePeaceCommand = new RelayCommand(() =>
+                    {
+                        ReferencedGame.CleanFronts();
+                        ReferencedGame.WhitePeace(ReferencedGame.Nations.Where(pair => pair.Value == SelectedDisplayEntry.Nation).Single().Key);
+                        UpdateMapAsync();
+                        ReferencedGame.Backup();
+                    });
+
+                return _whitePeaceCommand;
+            }
+        }
+
 
         private ICommand _refreshMapCommand;
         public ICommand RefreshMapCommand
@@ -223,7 +259,7 @@ namespace Mapperdom.ViewModels
                 if (_refreshMapCommand == null)
                     _refreshMapCommand = new RelayCommand(() =>
                     {
-                        SourceImage = ReferencedGame.GetCurrentMap();
+                        UpdateMapAsync();
                         ReferencedGame.Backup();
                     });
 
@@ -257,12 +293,13 @@ namespace Mapperdom.ViewModels
                     {
                         try
                         {
-                            ReferencedGame = await SaveService.LoadAsync("LastSave");
+                            MapperGame lastGame = await SaveService.LoadAsync("LastSave");
 
-                            if (ReferencedGame != null)
+                            if (lastGame != null)
                             {
+                                ReferencedGame = lastGame;
                                 ReferencedGame.CleanFronts();
-                                SourceImage = ReferencedGame.GetCurrentMap();
+                                UpdateMapAsync();
                             }
                             else
                             {
@@ -320,7 +357,7 @@ namespace Mapperdom.ViewModels
                                 return;
                             }
 
-                            SourceImage = ReferencedGame.GetCurrentMap();
+                            UpdateMapAsync();
                             ReferencedGame.CleanFronts();
                             ReferencedGame.Backup();
                         }
@@ -362,7 +399,7 @@ namespace Mapperdom.ViewModels
                             BitmapEncoder encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.PngEncoderId, stream);
 
                             // Set the software bitmap
-                            WriteableBitmap wb = ReferencedGame.GetCurrentMap();
+                            WriteableBitmap wb = await ReferencedGame.GetCurrentMapAsync();
 
 
                             Stream pixelStream = wb.PixelBuffer.AsStream();
@@ -406,7 +443,7 @@ namespace Mapperdom.ViewModels
                     _undoCommand = new RelayCommand(() =>
                     {
                         ReferencedGame.Undo();
-                        SourceImage = ReferencedGame.GetCurrentMap();
+                        UpdateMapAsync();
                     });
 
                 return _undoCommand;
@@ -421,7 +458,7 @@ namespace Mapperdom.ViewModels
                     _redoCommand = new RelayCommand(() =>
                     {
                         ReferencedGame.Redo();
-                        SourceImage = ReferencedGame.GetCurrentMap();
+                        UpdateMapAsync();
                     });
 
                 return _redoCommand;
@@ -439,29 +476,10 @@ namespace Mapperdom.ViewModels
                         ReferencedGame.Backup();
                         Nation n = SelectedDisplayEntry.Nation;
                         ReferencedGame.AnnexTerritory(ReferencedGame.Nations.Single(pair => pair.Value == n).Key);
-                        SourceImage = ReferencedGame.GetCurrentMap();
+                        UpdateMapAsync();
                     });
 
                 return _annexOccupationCommand;
-            }
-        }
-
-
-        private ICommand _generateNextFrame;
-
-        public ICommand GenerateNextFrame
-        {
-            get
-            {
-                if (_generateNextFrame == null)
-                    _generateNextFrame = new RelayCommand(() =>
-                    {
-                        ReferencedGame.Backup();
-                        ReferencedGame.Advance();
-                        SourceImage = ReferencedGame.GetCurrentMap();
-                    });
-
-                return _generateNextFrame;
             }
         }
 
@@ -538,7 +556,7 @@ namespace Mapperdom.ViewModels
                         ReferencedGame.Backup();
                         ReferencedGame.DeclareWar(ReferencedGame.Nations.FirstOrDefault(kvp => kvp.Value == d1.ViewModel.Nation1).Key, ReferencedGame.Nations.FirstOrDefault(kvp => kvp.Value == d1.ViewModel.Nation2).Key, n1Side, n2Side);
 
-                        SourceImage = ReferencedGame.GetCurrentMap();
+                        UpdateMapAsync();
                     });
 
                 return _declareWarCommand;
@@ -556,7 +574,7 @@ namespace Mapperdom.ViewModels
                     {
                         ReferencedGame.Backup();
                         ReferencedGame.WithdrawFromWar(ReferencedGame.Nations.FirstOrDefault(n => n.Value == SelectedDisplayEntry.Nation).Key);
-                        SourceImage = ReferencedGame.GetCurrentMap();
+                        UpdateMapAsync();
                     });
 
                 return _withdrawFromWarCommand;
@@ -604,7 +622,7 @@ namespace Mapperdom.ViewModels
 
                         }
 
-                        SourceImage = ReferencedGame.GetCurrentMap();
+                        UpdateMapAsync();
                     });
 
                 return _startUprisingCommand;
@@ -621,7 +639,7 @@ namespace Mapperdom.ViewModels
                     {
                         ReferencedGame.Backup();
                         ReferencedGame.Surrender(ReferencedGame.Nations.Where(pair => pair.Value == SelectedDisplayEntry.Nation).Single().Key);
-                        SourceImage = ReferencedGame.GetCurrentMap();
+                        UpdateMapAsync();
                     });
 
                 return _surrenderCommand;
@@ -648,8 +666,15 @@ namespace Mapperdom.ViewModels
             }
         }
 
-        public MainViewModel()
+        public async void UpdateMapAsync()
         {
+            SourceImage = await ReferencedGame.GetCurrentMapAsync();
+        }
+
+        public MainViewModel(Canvas canvas)
+        {
+            this.mapCanvas = canvas;
+
             if (Windows.ApplicationModel.DesignMode.DesignModeEnabled)
             {
                 return;
@@ -764,6 +789,66 @@ namespace Mapperdom.ViewModels
                 }
             }
             OnPropertyChanged("SelectedNationIsAtWar");
+        }
+
+        private ICommand _changeBordersCommand;
+        public ICommand ChangeBordersCommand
+        {
+            get
+            {
+                if (_changeBordersCommand == null)
+                    _changeBordersCommand = new RelayCommand(async () =>
+                    {
+                        ContentDialogResult res = new ContentDialogResult();
+                        ChangeBordersDialog d1 = new ChangeBordersDialog(ReferencedGame);
+                        res = await d1.ShowAsync();
+
+                        if (res != Windows.UI.Xaml.Controls.ContentDialogResult.Secondary)
+                            return;
+
+                        if(d1.ViewModel.Map.PixelWidth != ReferencedGame.Pixels.GetLength(0) || d1.ViewModel.Map.PixelHeight != ReferencedGame.Pixels.GetLength(1))
+                        {
+                            //TODO: Error message
+                            return;
+                        }
+
+                        byte[] imageArray = new byte[d1.ViewModel.Map.PixelWidth * d1.ViewModel.Map.PixelHeight * 4];
+
+                        using (Stream stream = d1.ViewModel.Map.PixelBuffer.AsStream())
+                        {
+                            stream.Read(imageArray, 0, imageArray.Length);
+                        }
+
+                        for (int y = 0; y < d1.ViewModel.Map.PixelHeight; y++)
+                        {
+                            for (int x = 0; x < d1.ViewModel.Map.PixelWidth; x++)
+                            {
+                                if (ReferencedGame.Pixels[x, y].IsOcean)
+                                    continue;
+
+                                System.Drawing.Color c = System.Drawing.Color.FromArgb(
+                                    imageArray[4 * (y * d1.ViewModel.Map.PixelWidth + x) + 3],
+                                    imageArray[4 * (y * d1.ViewModel.Map.PixelWidth + x) + 2],
+                                    imageArray[4 * (y * d1.ViewModel.Map.PixelWidth + x) + 1],
+                                    imageArray[4 * (y * d1.ViewModel.Map.PixelWidth + x) + 0]);
+
+                                if (!d1.ViewModel.NationColors.ContainsKey(c))
+                                {
+                                    //TODO: Error message
+                                    return;
+                                }
+                                else
+                                {
+                                    ReferencedGame.Pixels[x, y].OwnerId = d1.ViewModel.NationColors[c];
+                                }
+                            }
+                        }
+                        UpdateMapAsync();
+                        ReferencedGame.Backup();
+                    });
+
+                return _changeBordersCommand;
+            }
         }
     }
 }

@@ -9,6 +9,9 @@ using Windows.UI;
 using System.Drawing;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Imaging;
+using Microsoft.Graphics.Canvas;
+using Windows.Storage.Streams;
+using Microsoft.Graphics.Canvas.Text;
 
 namespace Mapperdom.Models
 {
@@ -99,8 +102,9 @@ namespace Mapperdom.Models
         }
 
 
-        public WriteableBitmap GetCurrentMap()
+        public async Task<WriteableBitmap> GetCurrentMapAsync()
         {
+            GenerateNationLabels();
             //Read base image
             WriteableBitmap newImage = new WriteableBitmap(baseImage.PixelWidth, baseImage.PixelHeight);
             byte[] imageArray = new byte[newImage.PixelHeight * newImage.PixelWidth * 4];
@@ -112,10 +116,35 @@ namespace Mapperdom.Models
 
             GetPixelOverlay(ref imageArray);
 
-            //Write pixel array to final image
-            using (Stream stream = newImage.PixelBuffer.AsStream())
+            CanvasDevice device = CanvasDevice.GetSharedDevice();
+            CanvasBitmap newNewImage;
+
+            newNewImage = CanvasBitmap.CreateFromBytes(device, imageArray, newImage.PixelWidth, newImage.PixelHeight, Windows.Graphics.DirectX.DirectXPixelFormat.B8G8R8A8UIntNormalized);
+
+            CanvasRenderTarget offscreen = new CanvasRenderTarget(
+                device, (float)newNewImage.Bounds.Width, (float)newNewImage.Bounds.Height, 96);
+
+
+            using (CanvasDrawingSession ds = offscreen.CreateDrawingSession())
             {
-                stream.Write(imageArray, 0, imageArray.Length);
+                ds.DrawImage(newNewImage, newNewImage.Bounds);
+
+                foreach (Nation nation in Nations.Values)
+                {
+                    if (nation.LabelFontSize == 0) continue;
+                    CanvasTextFormat format = new CanvasTextFormat() { FontFamily = "Georgia", FontSize = ds.ConvertPixelsToDips(nation.LabelFontSize) };
+
+                    CanvasTextLayout textLayout = new CanvasTextLayout(ds, nation.Name, format, 0f, 0f) { WordWrapping = CanvasWordWrapping.NoWrap };
+                    ds.DrawText(nation.Name, ds.ConvertPixelsToDips(nation.LabelPosX) - (float)(textLayout.DrawBounds.Width / 2), ds.ConvertPixelsToDips(nation.LabelPosY) - (float)(textLayout.DrawBounds.Height / 2), Colors.Black, format);
+                }
+            }
+
+
+            using (InMemoryRandomAccessStream stream = new InMemoryRandomAccessStream())
+            {
+                await offscreen.SaveAsync(stream, CanvasBitmapFileFormat.Png);
+                stream.Seek(0);
+                await newImage.SetSourceAsync(stream);
             }
 
             return newImage;
@@ -173,7 +202,7 @@ namespace Mapperdom.Models
                         imageArray[4 * (y * baseImage.PixelWidth + x)] = occupierSide.GainColor.B; // Blue
                         imageArray[4 * (y * baseImage.PixelWidth + x) + 1] = occupierSide.GainColor.G; // Green
                         imageArray[4 * (y * baseImage.PixelWidth + x) + 2] = occupierSide.GainColor.R; // Red
-                        //imageArray[4 * (y * baseImage.PixelWidth + x) + 3] = 0; // Opacity
+                        //imageArray[4 * (y * baseImage.PixelWidth + x) + 3] = 255; // Opacity
                     }
                     else if (officialNation.Master == null && officialSide == occupierSide) //Nation controls its own territory and is not puppetted
                     {
@@ -194,7 +223,7 @@ namespace Mapperdom.Models
                             imageArray[4 * (y * baseImage.PixelWidth + x)] = officialSide.MainColor.B; // Blue
                             imageArray[4 * (y * baseImage.PixelWidth + x) + 1] = officialSide.MainColor.G; // Green
                             imageArray[4 * (y * baseImage.PixelWidth + x) + 2] = officialSide.MainColor.R; // Red
-                            //imageArray[4 * (y * baseImage.PixelHeight + x) + 3] = 0; // Opacity
+                            //imageArray[4 * (y * baseImage.PixelHeight + x) + 3] = 255; // Opacity
                         }
                     }
                     else if (officialNation.Master == occupierNation || officialNation == occupierNation
@@ -203,7 +232,7 @@ namespace Mapperdom.Models
                         imageArray[4 * (y * baseImage.PixelWidth + x)] = occupierSide.PuppetColor.B; // Blue
                         imageArray[4 * (y * baseImage.PixelWidth + x) + 1] = occupierSide.PuppetColor.G; // Green
                         imageArray[4 * (y * baseImage.PixelWidth + x) + 2] = occupierSide.PuppetColor.R; // Red
-                        //imageArray[4 * (y * baseImage.PixelWidth + x) + 3] = 0; // Opacity
+                        //imageArray[4 * (y * baseImage.PixelWidth + x) + 3] = 255; // Opacity
                     }
                     else //Nation is occupied by another nation
                     {
@@ -220,7 +249,7 @@ namespace Mapperdom.Models
                                 occupierSide.OccupiedColor.G; // Green
                             imageArray[4 * (y * baseImage.PixelWidth + x) + 2] =
                                 occupierSide.OccupiedColor.R; // Red
-                            //imageArray[4 * (y * baseImage.PixelWidth + x) + 3] = 0; // Opacity
+                            //imageArray[4 * (y * baseImage.PixelWidth + x) + 3] = 255; // Opacity
                         }
                     }
                 }
@@ -234,7 +263,7 @@ namespace Mapperdom.Models
                 imageArray[4 * (p.Y * baseImage.PixelWidth + p.X)] = 0; // Blue
                 imageArray[4 * (p.Y * baseImage.PixelWidth + p.X) + 1] = 0; // Green
                 imageArray[4 * (p.Y * baseImage.PixelWidth + p.X) + 2] = 0; // Red
-                //imageArray[4 * (y * baseImage.PixelWidth + x) + 3] = 0; // Opacity
+                //imageArray[4 * (y * baseImage.PixelWidth + x) + 3] = 255; // Opacity
             }
         }
 
@@ -407,6 +436,7 @@ namespace Mapperdom.Models
         public void AnnexTerritory(byte nationId)
         {
             AnnexOccupation(nationId);
+            CheckForCollapse();
         }
 
         public void Surrender(byte nationId)
@@ -728,7 +758,7 @@ namespace Mapperdom.Models
                         continue;
                     }
 
-                    if (y < Pixels.GetLength(0) - 1 && !Pixels[x, y + 1].IsOcean && Pixels[x, y + 1].OccupierId == nation2)
+                    if (y < Pixels.GetLength(1) - 1 && !Pixels[x, y + 1].IsOcean && Pixels[x, y + 1].OccupierId == nation2)
                     {
                         bounds.Enqueue(new Point(x, y));
                         continue;
@@ -859,6 +889,7 @@ namespace Mapperdom.Models
                         Pixels[x, y].OwnerId = ownerId;
                 }
             }
+            GenerateNationLabels();
         }
 
         //Recursively fill in surrounding Pixels with data until it hits a border of some kind
@@ -911,7 +942,7 @@ namespace Mapperdom.Models
             if (PreviousStatesPosition == 0)
                 return;
 
-            MapState obtainedState = PreviousStates.ElementAt(PreviousStatesPosition - 1);
+            MapState obtainedState = PreviousStates.ElementAt(PreviousStatesPosition - 2);
 
             Nations = obtainedState.Nations;
             Sides = obtainedState.Sides;
@@ -1059,7 +1090,204 @@ namespace Mapperdom.Models
             }
         }
 
+        public void GenerateNationLabels()
+        {
+            Dictionary<byte, Rectangle> boundsDictionary = new Dictionary<byte, Rectangle>();
 
+            for (int y = 0; y < Pixels.GetLength(1); y++)
+            {
+                for (int x = 0; x < Pixels.GetLength(0); x++)
+                {
+                    if (Pixels[x, y].IsOcean) continue;
+
+                    if(!boundsDictionary.ContainsKey(Pixels[x, y].OwnerId))
+                    {
+                        boundsDictionary.Add(Pixels[x, y].OwnerId, new Rectangle(x, y, 1, 1));
+                    }
+                    else
+                    {
+                        Rectangle newRect = boundsDictionary[Pixels[x, y].OwnerId];
+                        bool hasChanged = false;
+
+                        if (x < newRect.Left)
+                        {
+                            newRect.X = x;
+                            hasChanged = true;
+                        }
+                        else if (x >= newRect.Right)
+                        {
+                            newRect.Width = x - newRect.X;
+                            hasChanged = true;
+                        }
+
+                        if (y < newRect.Top)
+                        {
+                            newRect.Y = y;
+                            hasChanged = true;
+                        }
+                        else if (y >= newRect.Bottom)
+                        {
+                            newRect.Height = y - newRect.Y;
+                            hasChanged = true;
+                        }
+
+                        if (hasChanged)
+                        {
+                            boundsDictionary[Pixels[x, y].OwnerId] = newRect;
+                        }
+                    }
+                }
+            }
+
+            foreach (KeyValuePair<byte, Rectangle> kvp in boundsDictionary)
+            {
+                List<Rectangle> rectangles = new List<Rectangle>();
+                List<Rectangle> activeRectangles = new List<Rectangle>();
+                for (int y = kvp.Value.Top; y <= kvp.Value.Bottom; y++)
+                {
+                    for(int i = activeRectangles.Count - 1; i >= 0; i--)
+                    {
+                        bool isRemoved = false;
+                        for (int x = activeRectangles[i].Left; x < activeRectangles[i].Right; x++)
+                        {
+                            if (Pixels[x, y].IsOcean || Pixels[x, y].OwnerId != kvp.Key)
+                            {
+                                rectangles.Add(activeRectangles[i]);
+                                activeRectangles.RemoveAt(i);
+                                isRemoved = true;
+                                break;
+                            }
+                        }
+                        if(!isRemoved)
+                            activeRectangles[i] = new Rectangle(activeRectangles[i].X, activeRectangles[i].Y, activeRectangles[i].Width, activeRectangles[i].Height + 1);
+                    }
+
+                    Rectangle? last = null;
+                    for (int x = kvp.Value.Left; x < kvp.Value.Right; x++)
+                    {
+                        if (!Pixels[x, y].IsOcean && Pixels[x, y].OwnerId == kvp.Key)
+                        {
+                            if(((x > 0 && (Pixels[x - 1, y].IsOcean || Pixels[x - 1, y].OwnerId != kvp.Key))
+                                && (y > 0 && (Pixels[x, y - 1].IsOcean || Pixels[x, y - 1].OwnerId != kvp.Key)))
+                                ||
+                                ((x == 0)
+                                && (y > 0 && (Pixels[x, y - 1].IsOcean || Pixels[x, y - 1].OwnerId != kvp.Key)))
+                                ||
+                                ((x > 0 && (Pixels[x - 1, y].IsOcean || Pixels[x - 1, y].OwnerId != kvp.Key))
+                                && (y== 0)))
+                            {
+                                last = new Rectangle(x, y, 1, 1);
+                                activeRectangles.Add(last.Value);
+                            }
+                            else if(last.HasValue)
+                            {
+                                last = new Rectangle(last.Value.X, last.Value.Y, last.Value.Width + 1, last.Value.Height);
+                                activeRectangles[activeRectangles.Count - 1] = last.Value;
+                            }
+                        }
+                        else
+                        {
+                            last = null;
+                        }
+                    }
+                }
+
+                foreach(Rectangle rect in activeRectangles)
+                {
+                    rectangles.Add(rect);
+                }
+
+
+                rectangles.OrderBy(r => r.Width * r.Height);
+                rectangles.Reverse();
+                Rectangle? biggest = null;
+                int biggestFontSize = 0;
+                foreach(Rectangle rect in rectangles.Where(r => r.Width > r.Height))
+                {
+                    if (rect.Height < 8 || rect.Width < 8 * Nations[kvp.Key].Name.Length)
+                        continue;
+
+                    int fontSize = 0;
+                    if (rect.Height < rect.Width / Nations[kvp.Key].Name.Length)
+                        fontSize = rect.Height;
+                    else fontSize = rect.Width / Nations[kvp.Key].Name.Length;
+
+                    if (fontSize < biggestFontSize) continue;
+
+                    biggestFontSize = fontSize;
+                    biggest = rect;
+                }
+
+                if(biggest.HasValue)
+                {
+                    Nations[kvp.Key].LabelFontSize = biggestFontSize;
+
+                    Nations[kvp.Key].LabelPosX = biggest.Value.X + biggest.Value.Width / 2;
+                    Nations[kvp.Key].LabelPosY = biggest.Value.Y + biggest.Value.Height / 2;
+                }
+                else
+                {
+                    Nations[kvp.Key].LabelFontSize = 0;
+                    Nations[kvp.Key].LabelPosX = rectangles[0].X + rectangles[0].Width / 2;
+                    Nations[kvp.Key].LabelPosY = rectangles[0].Y + rectangles[0].Height / 2;
+                }
+            }
+        }
+
+        public void WhitePeace(byte nationId)
+        {
+            for (int y = 0; y < Pixels.GetLength(1); y++)
+            {
+                for (int x = 0; x < Pixels.GetLength(0); x++)
+                {
+                    if (Pixels[x, y].IsOcean) continue;
+
+                    if (Pixels[x, y].OwnerId == nationId && Pixels[x, y].OccupierId != nationId)
+                    {
+                        Pixels[x, y].IsGained = false;
+                        Pixels[x, y].OccupierId = nationId;
+                    }
+                    if(Pixels[x, y].OccupierId == nationId && Pixels[x,y].OwnerId != nationId)
+                    {
+                        if (Nations[Pixels[x, y].OwnerId].IsSurrendered)
+                        {
+                            //TEMPORARY: If a nation is surrendered, un-surrender them, and give them back the territory
+                            //TODO: Give the occupied territory to a neighbor of the same alliance. If none exists, give it to the enemy or split it down the middle
+
+                            Nations[Pixels[x, y].OwnerId].IsSurrendered = false;
+                            Pixels[x, y].IsGained = true;
+                            Pixels[x, y].OccupierId = Pixels[x, y].OwnerId;
+                        }
+                        else
+                        {
+                            Pixels[x, y].IsGained = true;
+                            Pixels[x, y].OccupierId = Pixels[x, y].OwnerId;
+                        }
+                    }
+                }
+            }
+
+
+            List<KeyValuePair<byte, Nation>> allies = Nations.Where(kvp => kvp.Value.WarSide == Nations[nationId].WarSide).ToList();
+
+            if(allies.Count == 1)
+            {
+                Sides.Remove(Nations[nationId].WarSide.Value);
+
+                if(Sides.Count == 1)
+                {
+                    Sides.Clear();
+                    foreach(Nation n in Nations.Values)
+                    {
+                        n.WarSide = null;
+                    }
+                }
+            }
+            Nations[nationId].WarSide = null;
+        }
+
+        public bool CanUndo => PreviousStatesPosition >= 0;
+        public bool CanRedo => PreviousStatesPosition < PreviousStates.Count;
         public void CleanFronts()
         {
             foreach(UnorderedBytePair pair in Fronts.Keys.ToList())
