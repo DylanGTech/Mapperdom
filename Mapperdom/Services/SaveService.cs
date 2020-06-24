@@ -1,8 +1,10 @@
 ﻿using Ceras;
+using Mapperdom.Core.Helpers;
 using Mapperdom.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
@@ -21,7 +23,7 @@ namespace Mapperdom.Services
         {
             SerializerConfig config = new SerializerConfig();
             config.DefaultTargets = TargetMember.AllProperties;
-            config.ConfigType<MapState>().ConfigMember(ms => ms.TalkingNation).Exclude().ConstructBy(typeof(MapState).GetConstructors()[0]);
+            //config.ConfigType<MapState>().ConfigMember(ms => ms.TalkingNation).Exclude().ConstructBy(typeof(MapState).GetConstructors()[0]);
             config.ConfigType<Nation>().ConstructBy(typeof(Nation).GetConstructors()[0]);
             config.ConfigType<WarSide>().ConstructBy(typeof(WarSide).GetConstructors()[0]);
             config.ConfigType<PixelData>().ConstructBy(typeof(PixelData).GetConstructors()[0]);
@@ -31,32 +33,62 @@ namespace Mapperdom.Services
         }
 
 
-        public static async void SaveAsync(MapperGame map, string name)
+        public static async void SaveAsync(MapperGame map, StorageFile zipFile)
         {
 
             CerasSerializer serializer = new CerasSerializer(GetConfig());
 
-            MapState state = new MapState(map.Pixels, map.Nations, map.Sides, map.Fronts);
+            MapState state = new MapState()
+            {
+                Pixels = map.Pixels,
+                Nations = map.Nations,
+                Sides = map.Sides,
+                Fronts = new Dictionary<UnorderedBytePair, sbyte>(map.Fronts),
+                DialogText = map.DialogText,
+                DialogRectangle = map.DialogRectangle,
+                IsTreatyMode = map.IsTreatyMode
+            };
 
 
-            StorageFolder saveLocation = await ApplicationData.Current.LocalFolder.CreateFolderAsync("SavedMaps", CreationCollisionOption.OpenIfExists);
+            using (Stream fileStream = await zipFile.OpenStreamForWriteAsync())
+            {
+                using (ZipArchive zipArchive = new ZipArchive(fileStream, ZipArchiveMode.Update))
+                {
 
-            StorageFolder projectfolder = await saveLocation.CreateFolderAsync(name, CreationCollisionOption.ReplaceExisting);
+                    ZipArchiveEntry entry = zipArchive.CreateEntry("map.png");
 
-            StorageFile file = await projectfolder.CreateFileAsync("state.bin");
-            byte[] bytes = serializer.Serialize(state);
-            await FileIO.WriteBytesAsync(file, bytes);
 
-            //TODO: Save seed as well
+                    using (Stream pngStream = entry.Open())
+                    {
+                        byte[] inMemory = new byte[pngStream.Length];
+                        pngStream.Read(inMemory, 0, inMemory.Length);
 
-            file = await projectfolder.CreateFileAsync("map.png");
-            IRandomAccessStream stream = await file.OpenAsync(FileAccessMode.ReadWrite);
-            BitmapEncoder encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.PngEncoderId, stream);
-            Stream pixelStream = map.baseImage.PixelBuffer.AsStream();
-            byte[] Pixels = new byte[pixelStream.Length];
-            await pixelStream.ReadAsync(Pixels, 0, Pixels.Length);
-            encoder.SetPixelData(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Ignore, (uint)map.baseImage.PixelWidth, (uint)map.baseImage.PixelHeight, 96.0, 96.0, Pixels);
-            await encoder.FlushAsync();
+                        using (InMemoryRandomAccessStream ms = new InMemoryRandomAccessStream())
+                        {
+                            await ms.ReadAsync(inMemory.AsBuffer(), (uint)inMemory.Length, InputStreamOptions.None);
+
+                            BitmapEncoder encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.PngEncoderId, ms);
+                            Stream pixelStream = map.baseImage.PixelBuffer.AsStream();
+                            byte[] Pixels = new byte[pixelStream.Length];
+                            await pixelStream.ReadAsync(Pixels, 0, Pixels.Length);
+                            encoder.SetPixelData(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Ignore, (uint)map.baseImage.PixelWidth, (uint)map.baseImage.PixelHeight, 96.0, 96.0, Pixels);
+                            await encoder.FlushAsync();
+                        }
+                    }
+
+                    entry = zipArchive.CreateEntry("state.json");
+
+                    using (Stream stateStream = entry.Open())
+                    {
+                        using (DataWriter dataWriter = new DataWriter(stateStream.AsOutputStream()))
+                        {
+                            dataWriter.WriteString(await Json.StringifyAsync(state));
+                            await dataWriter.FlushAsync();
+                        }
+                    }
+
+                }
+            }
         }
 
         public static async void DeleteAsync(string name)
@@ -73,36 +105,64 @@ namespace Mapperdom.Services
         }
 
 
-        public static async Task<MapperGame> LoadAsync(string name)
+        public static async Task<MapperGame> LoadAsync(StorageFile zipFile)
         {
             CerasSerializer serializer = new CerasSerializer(GetConfig());
 
-            StorageFolder saveLocation = await ApplicationData.Current.LocalFolder.CreateFolderAsync("SavedMaps", CreationCollisionOption.OpenIfExists);
-
-            IStorageItem folder = await saveLocation.TryGetItemAsync(name);
-
-            if (folder == null) return null;
-
-            StorageFile file = await ((StorageFolder)folder).GetFileAsync("map.png");
-            ImageProperties p = await file.Properties.GetImagePropertiesAsync();
-            WriteableBitmap bmp = new WriteableBitmap((int)p.Width, (int)p.Height);
-            bmp.SetSource((await file.OpenReadAsync()).AsStream().AsRandomAccessStream());
+            if (zipFile == null) return null;
 
 
-            file = await ((StorageFolder)folder).GetFileAsync("state.bin");
-            MapState state = serializer.Deserialize<MapState>((await FileIO.ReadBufferAsync(file)).ToArray());
+            WriteableBitmap bmp;
+            MapState state;
+
+            using (Stream fileStream = await zipFile.OpenStreamForReadAsync())
+            {
+                using (ZipArchive zipArchive = new ZipArchive(fileStream, ZipArchiveMode.Read))
+                {
+                    ZipArchiveEntry entry = zipArchive.GetEntry("map.png");
 
 
+                    if (entry == null) return null;
 
-            MapperGame map = new MapperGame(bmp);
-            map.Nations = state.Nations;
-            map.Sides = state.Sides;
-            map.Pixels = state.Pixels;
-            map.Fronts = state.Fronts;
+                    using (Stream pngStream = entry.Open())
+                    {
+                        BitmapDecoder decoder = await BitmapDecoder.CreateAsync(BitmapDecoder.PngDecoderId, pngStream.AsRandomAccessStream());
 
-            return map;
+                        using (SoftwareBitmap swbmp = await decoder.GetSoftwareBitmapAsync())
+                        {
+                            bmp = new WriteableBitmap(swbmp.PixelWidth, swbmp.PixelHeight);
+                            swbmp.CopyToBuffer(bmp.PixelBuffer);
+
+
+                        }
+
+                        entry = zipArchive.GetEntry("state.json");
+
+                        if (entry == null) return null;
+
+                        using (Stream stateStream = entry.Open())
+                        {
+                            using (DataReader dataReader = new DataReader(stateStream.AsInputStream()))
+                            {
+                                uint numBytesLoaded = await dataReader.LoadAsync((uint)stateStream.Length);
+                                state = await Json.ToObjectAsync<MapState>(dataReader.ReadString(numBytesLoaded));
+                            }
+                        }
+
+                    }
+                }
+
+                MapperGame map = new MapperGame(bmp);
+                map.Nations = state.Nations;
+                map.Sides = state.Sides;
+                map.Pixels = state.Pixels;
+                map.Fronts = state.Fronts;
+                map.DialogText = state.DialogText;
+                map.DialogRectangle = state.DialogRectangle;
+
+                return map;
+            }
         }
-
         public static bool CanLoad(string name)
         {
             StorageFolder saveLocation = Task.Run(async () => await ApplicationData.Current.LocalFolder.CreateFolderAsync("SavedMaps", CreationCollisionOption.OpenIfExists)).Result;

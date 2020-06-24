@@ -139,9 +139,9 @@ namespace Mapperdom.ViewModels
             _nationColors = new Dictionary<Color, byte>();
 
 
-            float increment = 256 / game.Nations.Count;
+            float increment = 360 / game.Nations.Count;
 
-            foreach(KeyValuePair<byte, Nation> kvp in game.Nations)
+            foreach(KeyValuePair<byte, Nation> kvp in game.Nations.OrderBy(k => Guid.NewGuid()))
             {
                 _nationColors.Add(Nation.ColorFromHsl(kvp.Key * increment, 0.75f, 0.60f), kvp.Key);
             }

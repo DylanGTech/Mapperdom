@@ -7,22 +7,15 @@
     xmlns:t="http://schemas.telerik.com/2008/xaml/presentation"
     xmlns:i="using:Microsoft.Xaml.Interactivity"
     xmlns:models="using:Mapperdom.Models"
-    xmlns:core="using:Microsoft.Xaml.Interactions.Core"
+    xmlns:core="using:Microsoft.Xaml.Interactions.Core" xmlns:controls="using:Microsoft.UI.Xaml.Controls"
     Style="{StaticResource PageStyle}"
     mc:Ignorable="d">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="64"/>
+            <RowDefinition Height="40"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="64"/>
         </Grid.RowDefinitions>
-
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="3*"/>
-            <ColumnDefinition Width="2*" MinWidth="480"/>
-        </Grid.ColumnDefinitions>
-
-        <MenuBar Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" VerticalAlignment="Top">
+        <MenuBar VerticalAlignment="Top">
             <MenuBarItem Title="File">
                 <MenuFlyoutItem Text="New Project" Command="{x:Bind ViewModel.NewGameCommand}" IsEnabled="True">
                     <MenuFlyoutItem.Icon>
@@ -57,101 +50,119 @@
                     </MenuFlyoutItem.Icon>
                 </MenuFlyoutItem>
             </MenuBarItem>
-
         </MenuBar>
+        <Rectangle Grid.Row="1" Opacity="0.25" Fill="Gray"/>
+        <Grid Grid.Row="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="32"/>
+            </Grid.RowDefinitions>
 
-        <Viewbox Stretch="Uniform"  HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="1" Grid.Column="0">
-            <Canvas x:Name="mapCanvas" Width="{x:Bind ViewModel.SourceImage.PixelWidth, Mode=OneWay}" Height="{x:Bind ViewModel.SourceImage.PixelHeight, Mode=OneWay}">
-                <Image Source="{x:Bind ViewModel.SourceImage, Mode=OneWay}" Canvas.ZIndex="0"/>
-            </Canvas>
-        </Viewbox>
-        <ScrollViewer Grid.Row="1" Grid.Column="1" HorizontalScrollBarVisibility="Disabled">
-            <StackPanel>
-                <Button IsEnabled="{x:Bind ViewModel.IsActiveGame, Mode=OneWay}" HorizontalAlignment="Center" Content="Step Forward" Command="{x:Bind ViewModel.ExecutePlanCommand}" Margin="8"/>
-                <Button IsEnabled="{x:Bind ViewModel.IsActiveGame, Mode=OneWay}" HorizontalAlignment="Center" Content="Change Borders" Command="{x:Bind ViewModel.ChangeBordersCommand}" Margin="8"/>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="3*"/>
+                <ColumnDefinition Width="2*" MinWidth="480"/>
+            </Grid.ColumnDefinitions>
 
-                <StackPanel Visibility="{x:Bind ViewModel.TreatyOptionsVisibility, Mode=OneWay}">
-                    <Button IsEnabled="{x:Bind ViewModel.SelectedNationIsAtWar, Mode=OneWay}" HorizontalAlignment="Center" Content="Withdraw from War" Command="{x:Bind ViewModel.WithdrawFromWarCommand}" Margin="8"/>
-                </StackPanel>
+            <Rectangle Grid.Row="1" Opacity="0.25" Fill="Gray"/>
+            <Viewbox Stretch="Uniform"  HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="1" Grid.Column="0">
+                <Canvas x:Name="mapCanvas" Width="{x:Bind ViewModel.SourceImage.PixelWidth, Mode=OneWay}" Height="{x:Bind ViewModel.SourceImage.PixelHeight, Mode=OneWay}">
+                    <Image Source="{x:Bind ViewModel.SourceImage, Mode=OneWay}" Canvas.ZIndex="0"/>
+                </Canvas>
+            </Viewbox>
+            <ScrollViewer Grid.Row="1" Grid.Column="1" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel>
+                    <Button IsEnabled="{x:Bind ViewModel.IsActiveGame, Mode=OneWay}" HorizontalAlignment="Center" Content="Step Forward" Command="{x:Bind ViewModel.ExecutePlanCommand}" Margin="8"/>
+                    <Button IsEnabled="{x:Bind ViewModel.IsActiveGame, Mode=OneWay}" HorizontalAlignment="Center" Content="Change Borders" Command="{x:Bind ViewModel.ChangeBordersCommand}" Margin="8"/>
 
-                <StackPanel Visibility="{x:Bind ViewModel.WarOptionsVisibility, Mode=OneWay}">
-                    <ScrollViewer VerticalScrollMode="Enabled" HorizontalScrollMode="Disabled" MaxHeight="320" HorizontalAlignment="Center">
-                        <ListView x:Name="frontsList" ItemsSource="{x:Bind ViewModel.FrontEntries, Mode=OneWay}" SelectionMode="None" HorizontalAlignment="Stretch">
+                    <StackPanel Visibility="{x:Bind ViewModel.TreatyOptionsVisibility, Mode=OneWay}">
+                    </StackPanel>
+
+                    <StackPanel Visibility="{x:Bind ViewModel.WarOptionsVisibility, Mode=OneWay}">
+                        <ScrollViewer VerticalScrollMode="Enabled" HorizontalScrollMode="Disabled" MaxHeight="400" HorizontalAlignment="Center">
+                            <ListView x:Name="frontsList" ItemsSource="{x:Bind ViewModel.FrontEntries, Mode=OneWay}" SelectionMode="None" HorizontalAlignment="Stretch">
+                                <ListView.ItemTemplate>
+                                    <DataTemplate x:DataType="models:FrontEntry">
+                                        <Grid HorizontalAlignment="Center" Width="240">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="64"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition/>
+                                                <RowDefinition/>
+                                            </Grid.RowDefinitions>
+                                            <TextBlock Text="{x:Bind Nation1.Name, Mode=OneWay}" HorizontalAlignment="Left" Grid.Column="0" TextWrapping="WrapWholeWords" VerticalAlignment="Stretch" Padding="4"/>
+                                            <TextBlock Text="VS" Grid.Column="1" HorizontalAlignment="Center" TextWrapping="WrapWholeWords" VerticalAlignment="Center" Padding="4"/>
+                                            <TextBlock Text="{x:Bind Nation2.Name, Mode=OneWay}" HorizontalAlignment="Right" Grid.Column="2" TextWrapping="WrapWholeWords" VerticalAlignment="Stretch" Padding="4"/>
+                                            <Slider Grid.Row="1" Grid.ColumnSpan="3" Minimum="-80" Maximum="80" Value="{x:Bind Strength, Mode=TwoWay}" Header="Force" HorizontalAlignment="Stretch" VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
+                        </ScrollViewer>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <Button IsEnabled="{x:Bind ViewModel.IsActiveGame, Mode=OneWay}" HorizontalAlignment="Center" Content="Rebellion" Command="{x:Bind ViewModel.StartUprisingCommand}" Margin="8"/>
+                        <Button IsEnabled="{x:Bind ViewModel.IsActiveGame, Mode=OneWay}" HorizontalAlignment="Center" Content="Declare War" Command="{x:Bind ViewModel.DeclareWarCommand}" Margin="8"/>
+                    </StackPanel>
+                    <DropDownButton HorizontalAlignment="Center" Content="War Options"  IsEnabled="{x:Bind ViewModel.SelectedNationIsAtWar, Mode=OneWay}" Margin="8">
+                        <DropDownButton.Flyout>
+                            <MenuFlyout>
+                                <MenuFlyoutItem Text="Annex Occupation" Command="{x:Bind ViewModel.AnnexOccupationCommand}"/>
+                                <MenuFlyoutItem Text="Begin Naval Invasion" Command="{x:Bind ViewModel.BeginNavalInvasionCommand}"/>
+                                <MenuFlyoutItem Text="Surrender" Command="{x:Bind ViewModel.SurrenderCommand}"/>
+                                <MenuFlyoutItem Text="Withdraw from War" Command="{x:Bind ViewModel.WithdrawFromWarCommand}"/>
+                            </MenuFlyout>
+                        </DropDownButton.Flyout>
+                    </DropDownButton>
+
+                    <ToggleSwitch IsEnabled="{x:Bind ViewModel.IsActiveGame, Mode=OneWay}" IsOn="{x:Bind ViewModel.IsTreatyMode, Mode=TwoWay}" Header="Treaty Mode" HorizontalAlignment="Center" Width="100"/>
+
+                    <TextBox PlaceholderText="Dialog Text" MaxWidth="500" Margin="8" Text="{x:Bind ViewModel.ReferencedGame.DialogText, Mode=TwoWay}" IsEnabled="{x:Bind ViewModel.IsActiveGame, Mode=OneWay}"/>
+
+                    <ScrollViewer>
+                        <ListView x:Name="nationsList" SelectionMode="Single" ItemsSource="{x:Bind ViewModel.MapEntries, Mode=OneWay}" SelectedItem="{x:Bind ViewModel.SelectedDisplayEntry, Mode=TwoWay}">
                             <ListView.ItemTemplate>
-                                <DataTemplate x:DataType="models:FrontEntry">
-                                    <Grid HorizontalAlignment="Center" Width="240">
+                                <DataTemplate x:DataType="models:MapDisplayEntry">
+                                    <Grid HorizontalAlignment="Stretch">
                                         <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="64"/>
-                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="128"/>
+                                            <ColumnDefinition Width="128"/>
+                                            <ColumnDefinition Width="128"/>
+                                            <ColumnDefinition Width="128"/>
+                                            <ColumnDefinition Width="128"/>
                                         </Grid.ColumnDefinitions>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition/>
-                                            <RowDefinition/>
-                                        </Grid.RowDefinitions>
-                                        <TextBlock Text="{x:Bind Nation1.Name, Mode=OneWay}" HorizontalAlignment="Left" Grid.Column="0" TextWrapping="WrapWholeWords" VerticalAlignment="Stretch" Padding="4"/>
-                                        <TextBlock Text="VS" Grid.Column="1" HorizontalAlignment="Center" TextWrapping="WrapWholeWords" VerticalAlignment="Center" Padding="4"/>
-                                        <TextBlock Text="{x:Bind Nation2.Name, Mode=OneWay}" HorizontalAlignment="Right" Grid.Column="2" TextWrapping="WrapWholeWords" VerticalAlignment="Stretch" Padding="4"/>
-                                        <Slider Grid.Row="1" Grid.ColumnSpan="3" Minimum="-75" Maximum="75" Value="{x:Bind Strength, Mode=TwoWay}" Header="Force" HorizontalAlignment="Stretch" VerticalAlignment="Center"/>
+                                        <CheckBox IsChecked="{x:Bind Nation.IsSelected, Mode=TwoWay}"/>
+                                        <TextBlock Text="{x:Bind Nation.Name, Mode=OneWay}" Grid.Column="1" TextWrapping="WrapWholeWords" VerticalAlignment="Center" Padding="4"/>
+
+                                        <Border Width="128" Height="48" Grid.Column="2">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Rectangle Grid.Column="0" Fill="{x:Bind MainBrush, Mode=OneWay}"/>
+                                                <Rectangle Grid.Column="1" Fill="{x:Bind PuppetBrush, Mode=OneWay}"/>
+                                                <Rectangle Grid.Column="2" Fill="{x:Bind OccupiedBrush, Mode=OneWay}"/>
+                                                <Rectangle Grid.Column="3" Fill="{x:Bind GainBrush, Mode=OneWay}"/>
+                                            </Grid>
+                                        </Border>
+
+                                        <TextBlock Text="{x:Bind SideName, Mode=OneWay}" Grid.Column="3" TextWrapping="WrapWholeWords" FontStyle="Italic" FontSize="8" VerticalAlignment="Center" Padding="4"/>
                                     </Grid>
                                 </DataTemplate>
                             </ListView.ItemTemplate>
                         </ListView>
                     </ScrollViewer>
+                    <Button IsEnabled="{x:Bind ViewModel.IsActiveGame, Mode=OneWay}" HorizontalAlignment="Center"  Grid.Column="4" Content="Edit Nation" Command="{x:Bind ViewModel.EditNationCommand}"/>
+                    <Button IsEnabled="{x:Bind ViewModel.IsActiveGame, Mode=OneWay}" HorizontalAlignment="Center" Content="Refresh Map" Command="{x:Bind ViewModel.RefreshMapCommand}" Margin="8"/>
                 </StackPanel>
-
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                    <Button IsEnabled="{x:Bind ViewModel.IsActiveGame, Mode=OneWay}" HorizontalAlignment="Center" Content="Rebellion" Command="{x:Bind ViewModel.StartUprisingCommand}" Margin="8"/>
-                    <Button IsEnabled="{x:Bind ViewModel.IsActiveGame, Mode=OneWay}" HorizontalAlignment="Center" Content="Declare War" Command="{x:Bind ViewModel.DeclareWarCommand}" Margin="8"/>
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                    <Button IsEnabled="{x:Bind ViewModel.SelectedNationIsAtWar, Mode=OneWay}" HorizontalAlignment="Center" Content="Annex Occupation" Command="{x:Bind ViewModel.AnnexOccupationCommand}" Margin="8"/>
-                    <Button IsEnabled="{x:Bind ViewModel.SelectedNationIsAtWar, Mode=OneWay}" HorizontalAlignment="Center" Content="Surrender" Command="{x:Bind ViewModel.SurrenderCommand}" Margin="8"/>
-                    <Button IsEnabled="{x:Bind ViewModel.SelectedNationIsAtWar, Mode=OneWay}" HorizontalAlignment="Center" Content="White Peace" Command="{x:Bind ViewModel.WhitePeaceCommand}" Margin="8"/>
-                </StackPanel>
-
-                <CheckBox IsEnabled="{x:Bind ViewModel.IsActiveGame, Mode=OneWay}" IsChecked="{x:Bind ViewModel.IsTreatyMode, Mode=TwoWay}" Content="Treaty Mode" HorizontalAlignment="Center"/>
-
-
-                <ScrollViewer>
-                    <ListView x:Name="nationsList" SelectionMode="Single" ItemsSource="{x:Bind ViewModel.MapEntries, Mode=OneWay}" SelectedItem="{x:Bind ViewModel.SelectedDisplayEntry, Mode=TwoWay}">
-                        <ListView.ItemTemplate>
-                            <DataTemplate x:DataType="models:MapDisplayEntry">
-                                <Grid HorizontalAlignment="Stretch">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="128"/>
-                                        <ColumnDefinition Width="128"/>
-                                        <ColumnDefinition Width="128"/>
-                                        <ColumnDefinition Width="128"/>
-                                        <ColumnDefinition Width="128"/>
-                                    </Grid.ColumnDefinitions>
-                                    <CheckBox IsChecked="{x:Bind Nation.IsSelected, Mode=TwoWay}"/>
-                                    <TextBlock Text="{x:Bind Nation.Name, Mode=OneWay}" Grid.Column="1" TextWrapping="WrapWholeWords" VerticalAlignment="Center" Padding="4"/>
-
-                                    <Border Width="128" Height="48" Grid.Column="2">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="*"/>
-                                            </Grid.ColumnDefinitions>
-                                            <Rectangle Grid.Column="0" Fill="{x:Bind MainBrush, Mode=OneWay}"/>
-                                            <Rectangle Grid.Column="1" Fill="{x:Bind PuppetBrush, Mode=OneWay}"/>
-                                            <Rectangle Grid.Column="2" Fill="{x:Bind OccupiedBrush, Mode=OneWay}"/>
-                                            <Rectangle Grid.Column="3" Fill="{x:Bind GainBrush, Mode=OneWay}"/>
-                                        </Grid>
-                                    </Border>
-
-                                    <TextBlock Text="{x:Bind SideName, Mode=OneWay}" Grid.Column="3" TextWrapping="WrapWholeWords" FontStyle="Italic" FontSize="8" VerticalAlignment="Center" Padding="4"/>
-                                </Grid>
-                            </DataTemplate>
-                        </ListView.ItemTemplate>
-                    </ListView>
-                </ScrollViewer>
-                <Button IsEnabled="{x:Bind ViewModel.IsActiveGame, Mode=OneWay}" HorizontalAlignment="Center"  Grid.Column="4" Content="Edit Nation" Command="{x:Bind ViewModel.EditNationCommand}"/>
-                <Button IsEnabled="{x:Bind ViewModel.IsActiveGame, Mode=OneWay}" HorizontalAlignment="Center" Content="Refresh Map" Command="{x:Bind ViewModel.RefreshMapCommand}" Margin="8"/>
-            </StackPanel>
-        </ScrollViewer>
+            </ScrollViewer>
+        </Grid>
     </Grid>
 </Page>

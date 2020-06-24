@@ -27,6 +27,9 @@ namespace Mapperdom.Models
 
         public Dictionary<byte, WarSide> Sides;
 
+        public string DialogText;
+        public Rectangle DialogRectangle;
+
         private LinkedList<MapState> PreviousStates = new LinkedList<MapState>();
         private byte PreviousStatesPosition = 0;
 
@@ -53,6 +56,9 @@ namespace Mapperdom.Models
             Sides = new Dictionary<byte, WarSide>();
             Nations = new Dictionary<byte, Nation>();
 
+            DialogText = "";
+            Rectangle newDialogRectangle = new Rectangle(0, 0, 0, 0);
+
             for (int y = 0; y < baseImage.PixelHeight; y++)
             {
                 for (int x = 0; x < baseImage.PixelWidth; x++)
@@ -65,12 +71,43 @@ namespace Mapperdom.Models
                     {
                         Pixels[x, y].IsOcean = true;
                     }
+                    //Dialog box
+                    else if (imageArray[4 * (y * baseImage.PixelWidth + x)] == 255 //Blue
+                        && imageArray[4 * (y * baseImage.PixelWidth + x) + 1] == 255 //Green
+                        && imageArray[4 * (y * baseImage.PixelWidth + x) + 2] == 255) //Red
+                    {
+                        if (newDialogRectangle.Width == 0 || newDialogRectangle.Height == 0)
+                        {
+                            newDialogRectangle = new Rectangle(x, y, 1, 1);
+                        }
+                        else
+                        {
+                            if(newDialogRectangle.X > x)
+                            {
+                                newDialogRectangle.X = x;
+                            }
+                            else if(newDialogRectangle.X + newDialogRectangle.Width < x)
+                            {
+                                newDialogRectangle.Width = x - newDialogRectangle.X;
+                            }
+
+                            if (newDialogRectangle.Y > y)
+                            {
+                                newDialogRectangle.Y = y;
+                            }
+                            else if (newDialogRectangle.Y + newDialogRectangle.Height < y)
+                            {
+                                newDialogRectangle.Height = y - newDialogRectangle.Y;
+                            }
+                        }
+                        Pixels[x, y].IsOcean = true;
+                    }
                     //Land
                     else
                     {
-                        System.Drawing.Color c = System.Drawing.Color.FromArgb(imageArray[4 * (y * baseImage.PixelWidth + x)],
+                        System.Drawing.Color c = System.Drawing.Color.FromArgb(imageArray[4 * (y * baseImage.PixelWidth + x) + 2],
                             imageArray[4 * (y * baseImage.PixelWidth + x) + 1],
-                            imageArray[4 * (y * baseImage.PixelWidth + x) + 2]);
+                            imageArray[4 * (y * baseImage.PixelWidth + x)]);
 
                         Nation foundNation = Nations.Values.FirstOrDefault(n => n.MainColor == c);
 
@@ -92,6 +129,8 @@ namespace Mapperdom.Models
                     }
                 }
             }
+
+            DialogRectangle = newDialogRectangle;
 
             if(!useCustomColors)
             {
@@ -134,8 +173,27 @@ namespace Mapperdom.Models
                     if (nation.LabelFontSize == 0) continue;
                     CanvasTextFormat format = new CanvasTextFormat() { FontFamily = "Georgia", FontSize = ds.ConvertPixelsToDips(nation.LabelFontSize) };
 
+                    if (nation.Name == null || nation.Name == "") continue;
                     CanvasTextLayout textLayout = new CanvasTextLayout(ds, nation.Name, format, 0f, 0f) { WordWrapping = CanvasWordWrapping.NoWrap };
                     ds.DrawText(nation.Name, ds.ConvertPixelsToDips(nation.LabelPosX) - (float)(textLayout.DrawBounds.Width / 2), ds.ConvertPixelsToDips(nation.LabelPosY) - (float)(textLayout.DrawBounds.Height / 2), Colors.Black, format);
+                }
+
+                Rectangle? smallerDialogRectangle = null;
+
+                if (DialogRectangle.Width > 20 && DialogRectangle.Height > 20)
+                {
+                    smallerDialogRectangle = new Rectangle(DialogRectangle.X + 10, DialogRectangle.Y + 10, DialogRectangle.Width - 10, DialogRectangle.Height - 10);
+                }
+
+                if(smallerDialogRectangle.HasValue && DialogText != null && DialogText != "")
+                {
+                    CanvasTextFormat format = new CanvasTextFormat() { FontFamily = "Georgia", FontSize = ds.ConvertPixelsToDips(48) };
+
+                    CanvasTextLayout textLayout = new CanvasTextLayout(ds, DialogText, format, 0f, 0f) { WordWrapping = CanvasWordWrapping.NoWrap };
+                    ds.DrawText(DialogText,
+                        new Windows.Foundation.Rect(ds.ConvertPixelsToDips(smallerDialogRectangle.Value.X), ds.ConvertPixelsToDips(smallerDialogRectangle.Value.Y), ds.ConvertPixelsToDips(smallerDialogRectangle.Value.Width), ds.ConvertPixelsToDips(smallerDialogRectangle.Value.Height)),
+                        Windows.UI.Colors.Black,
+                        format);
                 }
             }
 
@@ -154,15 +212,41 @@ namespace Mapperdom.Models
         {
             Queue<Point> borders = new Queue<Point>();
 
+
+
+            Rectangle? smallerDialogRectangle = null;
+
+            if(DialogRectangle.Width > 16 && DialogRectangle.Height > 16)
+            {
+                 smallerDialogRectangle = new Rectangle(DialogRectangle.X + 8, DialogRectangle.Y + 8, DialogRectangle.Width - 16, DialogRectangle.Height - 16);
+            }
+
             for (int y = 0; y < baseImage.PixelHeight; y++)
             {
                 for (int x = 0; x < baseImage.PixelWidth; x++)
                 {
                     if (Pixels[x, y].IsOcean)
                     {
-                        imageArray[4 * (y * baseImage.PixelWidth + x)] = 126; // Blue
-                        imageArray[4 * (y * baseImage.PixelWidth + x) + 1] = 56; // Green
-                        imageArray[4 * (y * baseImage.PixelWidth + x) + 2] = 39; // Red
+                        if(DialogRectangle.Contains(x, y))
+                        {
+                            if(smallerDialogRectangle.HasValue && smallerDialogRectangle.Value.Contains(x, y))
+                            {
+                                imageArray[4 * (y * baseImage.PixelWidth + x)] = 255; // Blue
+                                imageArray[4 * (y * baseImage.PixelWidth + x) + 1] = 255; // Green
+                                imageArray[4 * (y * baseImage.PixelWidth + x) + 2] = 255; // Red
+                            }
+                            else
+                            {
+                                imageArray[4 * (y * baseImage.PixelWidth + x)] = 0; // Blue
+                                imageArray[4 * (y * baseImage.PixelWidth + x) + 1] = 0; // Green
+                                imageArray[4 * (y * baseImage.PixelWidth + x) + 2] = 0; // Red
+                            }
+                            continue;
+                        }
+
+                        imageArray[4 * (y * baseImage.PixelWidth + x)] = 95; // Blue
+                        imageArray[4 * (y * baseImage.PixelWidth + x) + 1] = 47; // Green
+                        imageArray[4 * (y * baseImage.PixelWidth + x) + 2] = 27; // Red
                         continue;
                     }
                     Nation officialNation = Nations[Pixels[x, y].OwnerId];
@@ -227,7 +311,7 @@ namespace Mapperdom.Models
                         }
                     }
                     else if (officialNation.Master == occupierNation || officialNation == occupierNation
-                    ) //Nation controlls a puppet's territory
+                    ) //Nation controls a puppet's territory
                     {
                         imageArray[4 * (y * baseImage.PixelWidth + x)] = occupierSide.PuppetColor.B; // Blue
                         imageArray[4 * (y * baseImage.PixelWidth + x) + 1] = occupierSide.PuppetColor.G; // Green
@@ -291,6 +375,99 @@ namespace Mapperdom.Models
 
             CheckForCollapse(); //Did a nation collapse?
         }
+
+        public void BeginNavalInvasion(byte invader, byte defender)
+        {
+            Rectangle invaderBoundingBox = new Rectangle(0, 0, 0, 0);
+
+            Queue<Point> defenderCoast = new Queue<Point>();
+
+            GetCoastalPixels(defender, ref defenderCoast);
+
+            if (defenderCoast.Count == 0) return;
+
+            for (int y = 0; y < Pixels.GetLength(1); y++)
+            {
+                for (int x = 0; x < Pixels.GetLength(0); x++)
+                {
+                    if (Pixels[x, y].IsOcean || Pixels[x, y].OccupierId != defender) continue;
+
+                    if (invaderBoundingBox.Width == 0 && invaderBoundingBox.Height == 0)
+                    {
+                        invaderBoundingBox = new Rectangle(x, y, 1, 1);
+                    }
+                    else
+                    {
+                        Rectangle newRect = invaderBoundingBox;
+                        bool hasChanged = false;
+
+                        if (x < newRect.Left)
+                        {
+                            newRect.X = x;
+                            hasChanged = true;
+                        }
+                        else if (x >= newRect.Right)
+                        {
+                            newRect.Width = x - newRect.X;
+                            hasChanged = true;
+                        }
+
+                        if (y < newRect.Top)
+                        {
+                            newRect.Y = y;
+                            hasChanged = true;
+                        }
+                        else if (y >= newRect.Bottom)
+                        {
+                            newRect.Height = y - newRect.Y;
+                            hasChanged = true;
+                        }
+
+                        if (hasChanged)
+                        {
+                            invaderBoundingBox = newRect;
+                        }
+                    }
+                }
+            }
+
+            if (invaderBoundingBox.Height == 0 || invaderBoundingBox.Width == 0) return;
+
+            Point center = new Point(invaderBoundingBox.X + invaderBoundingBox.Width / 2, invaderBoundingBox.Y + invaderBoundingBox.Height / 2);
+            defenderCoast.OrderBy(p => Math.Sqrt((center.X - p.X) * (center.X - p.X) + (center.Y - p.Y) * (center.Y - p.Y)));
+
+            if(defenderCoast.Count < 25)
+            {
+                foreach(Point p in defenderCoast)
+                {
+                    Pixels[p.X, p.Y].OccupierId = invader;
+                    Pixels[p.X, p.Y].IsGained = true;
+                }
+            }
+            else
+            {
+                List<Point> nearbyCoast = defenderCoast.ToList().GetRange(0, defenderCoast.Count / 4);
+
+                int numBeachheads = nearbyCoast.Count / 3 <= 15 ? 15 : nearbyCoast.Count / 3;
+
+                do
+                {
+                    int i = rng.Next(0, nearbyCoast.Count - 1);
+                    Point p = nearbyCoast[i];
+                    nearbyCoast.RemoveAt(i);
+
+                    Pixels[p.X, p.Y].OccupierId = invader;
+                    Pixels[p.X, p.Y].IsGained = true;
+
+                    numBeachheads--;
+                }
+                while (numBeachheads > 0);
+            }
+
+        }
+
+
+
 
         public void GainTerritory(UnorderedBytePair nationIds)
         {
@@ -613,7 +790,7 @@ namespace Mapperdom.Models
                 }
                 else
                 {
-                    //Nation is not at war and has no territory (shouldn't happen naturally)
+                    //Nation is not at war and has no territory (shouldn't happen naturally unless borders are changed)
                     Nations.Remove(id);
                 }
             }
@@ -933,7 +1110,15 @@ namespace Mapperdom.Models
 
 
 
-            PreviousStates.AddLast(new MapState((PixelData[,])Pixels.Clone(), clonedNations, clonedSides, new Dictionary<UnorderedBytePair, sbyte>(Fronts)));
+            PreviousStates.AddLast(new MapState()
+            {
+                Pixels = (PixelData[,])Pixels.Clone(),
+                Nations = clonedNations,
+                Sides = clonedSides,
+                Fronts = new Dictionary<UnorderedBytePair, sbyte>(Fronts),
+                DialogText = DialogText,
+                IsTreatyMode = IsTreatyMode
+            });
             PreviousStatesPosition = (byte)(PreviousStates.Count);
         }
 
@@ -948,6 +1133,8 @@ namespace Mapperdom.Models
             Sides = obtainedState.Sides;
             Pixels = obtainedState.Pixels;
             Fronts = obtainedState.Fronts;
+            DialogText = obtainedState.DialogText;
+            IsTreatyMode = obtainedState.IsTreatyMode;
             PreviousStatesPosition--;
         }
 
@@ -961,6 +1148,9 @@ namespace Mapperdom.Models
             Sides = obtainedState.Sides;
             Pixels = obtainedState.Pixels;
             Fronts = obtainedState.Fronts;
+
+            DialogText = obtainedState.DialogText;
+            IsTreatyMode = obtainedState.IsTreatyMode;
             PreviousStatesPosition++;
         }
 
@@ -991,45 +1181,6 @@ namespace Mapperdom.Models
                     Nations[nation2Id].WarSide = newWarSideId;
                 }
                 else Nations[nation2Id].WarSide = Sides.First(kvp => kvp.Value == nation2Side).Key;
-            }
-
-            CleanFronts();
-        }
-
-        public void WithdrawFromWar(byte nationID, bool keepLandOccuppied = false)
-        {
-            for (int y = 0; y < Pixels.GetLength(1); y++)
-            {
-                for (int x = 0; x < Pixels.GetLength(0); x++)
-                {
-                    if (Pixels[x, y].OwnerId == nationID || Pixels[x, y].OccupierId == nationID)
-                    {
-                        if(keepLandOccuppied)
-                        {
-                            Pixels[x, y].OwnerId = Pixels[x, y].OccupierId;
-                        }
-                        else
-                        {
-                            Pixels[x, y].OccupierId = Pixels[x, y].OwnerId;
-                        }
-                    }
-                }
-            }
-
-            byte side = Nations[nationID].WarSide.Value;
-            Nations[nationID].WarSide = null;
-
-
-            if (Nations.Values.Where(n => n.WarSide == side).ToList().Count == 0)
-                Sides.Remove(side);
-
-            if (Sides.Count == 1)
-            {
-                Sides.Clear();
-                foreach (Nation n in Nations.Values)
-                {
-                    n.WarSide = null;
-                }
             }
 
             CleanFronts();
@@ -1234,7 +1385,7 @@ namespace Mapperdom.Models
             }
         }
 
-        public void WhitePeace(byte nationId)
+        public void WithdrawFromWar(byte nationId)
         {
             for (int y = 0; y < Pixels.GetLength(1); y++)
             {

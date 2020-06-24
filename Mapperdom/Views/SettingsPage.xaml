@@ -77,9 +77,7 @@
 
                 <HyperlinkButton
                     Margin="{StaticResource XSmallTopMargin}"
-                    x:Uid="FeedbackHub_Link"
-                    Command="{x:Bind ViewModel.LaunchFeedbackHubCommand}"
-                    Visibility="{x:Bind ViewModel.FeedbackLinkVisibility}" />
+                    x:Uid="FeedbackHub_Link" />
             </StackPanel>
         </StackPanel>
     </Grid>    

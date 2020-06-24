@@ -32,6 +32,7 @@ namespace Mapperdom.ViewModels
         private readonly CoreDispatcher dispatcher;
         private readonly Canvas mapCanvas;
 
+        /*
         private async Task OnUiThread(Action action)
         {
             await this.dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => action());
@@ -40,6 +41,7 @@ namespace Mapperdom.ViewModels
         {
             await this.dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () => await action());
         }
+        */
 
         public bool CanUndo
         {
@@ -232,24 +234,6 @@ namespace Mapperdom.ViewModels
             }
         }
 
-        private ICommand _whitePeaceCommand;
-        public ICommand WhitePeaceCommand
-        {
-            get
-            {
-                if (_whitePeaceCommand == null)
-                    _whitePeaceCommand = new RelayCommand(() =>
-                    {
-                        ReferencedGame.CleanFronts();
-                        ReferencedGame.WhitePeace(ReferencedGame.Nations.Where(pair => pair.Value == SelectedDisplayEntry.Nation).Single().Key);
-                        UpdateMapAsync();
-                        ReferencedGame.Backup();
-                    });
-
-                return _whitePeaceCommand;
-            }
-        }
-
 
         private ICommand _refreshMapCommand;
         public ICommand RefreshMapCommand
@@ -274,9 +258,16 @@ namespace Mapperdom.ViewModels
             get
             {
                 if (_saveProjectCommand == null)
-                    _saveProjectCommand = new RelayCommand(() =>
+                    _saveProjectCommand = new RelayCommand(async () =>
                     {
-                            SaveService.SaveAsync(ReferencedGame, "LastSave");
+                        FileSavePicker savePicker = new FileSavePicker();
+                        List<string> zipList = new List<string>();
+                        zipList.Add(".zip");
+                        savePicker.FileTypeChoices.Add("Zip File", zipList);
+                        StorageFile file = await savePicker.PickSaveFileAsync();
+                        if (file == null) return;
+
+                        SaveService.SaveAsync(ReferencedGame, file);
                     });
 
                 return _saveProjectCommand;
@@ -291,9 +282,15 @@ namespace Mapperdom.ViewModels
                 if (_loadProjectCommand == null)
                     _loadProjectCommand = new RelayCommand(async () =>
                     {
+                        FileOpenPicker openPicker = new FileOpenPicker();
+                        openPicker.FileTypeFilter.Add(".zip");
+                        StorageFile file = await openPicker.PickSingleFileAsync();
+
+                        if (file == null) return;
+
                         try
                         {
-                            MapperGame lastGame = await SaveService.LoadAsync("LastSave");
+                            MapperGame lastGame = await SaveService.LoadAsync(file);
 
                             if (lastGame != null)
                             {
@@ -482,6 +479,43 @@ namespace Mapperdom.ViewModels
                 return _annexOccupationCommand;
             }
         }
+
+        private ICommand _beginNavalInvasionCommand;
+        public ICommand BeginNavalInvasionCommand
+        {
+            get
+            {
+                if (_beginNavalInvasionCommand == null)
+                    _beginNavalInvasionCommand = new RelayCommand(async () =>
+                    {
+                        ObservableCollection<Nation> options = new ObservableCollection<Nation>();
+                        foreach (Nation n in ReferencedGame.Nations.Values.ToList())
+                        {
+                            if(n.WarSide.HasValue && n.WarSide != SelectedDisplayEntry.Nation.WarSide)
+                                options.Add(n);
+                        }
+
+                        ContentDialogResult res = new ContentDialogResult();
+                        PickNationDialog d1 = new PickNationDialog(this, options, SelectedDisplayEntry.Nation);
+                        res = await d1.ShowAsync();
+
+                        if (res != Windows.UI.Xaml.Controls.ContentDialogResult.Secondary)
+                            return;
+                        if (d1.ViewModel.Nation2 == null)
+                            return;
+
+                        ReferencedGame.Backup();
+                        ReferencedGame.BeginNavalInvasion(
+                            ReferencedGame.Nations.First(n => n.Value == d1.ViewModel.Nation1).Key,
+                            ReferencedGame.Nations.First(n => n.Value == d1.ViewModel.Nation2).Key);
+
+                    });
+
+                return _beginNavalInvasionCommand;
+            }
+        }
+
+
 
         private ICommand _declareWarCommand;
         public ICommand DeclareWarCommand
@@ -839,10 +873,21 @@ namespace Mapperdom.ViewModels
                                 }
                                 else
                                 {
+                                    //This is in the case the nation is NOT at war and exchanges borders with another nation
+                                    //This prevents non-rebel nations from existing even when they are annexed
+                                    //Also prevents other nations from occupying neutral territories
+                                    if(!Nations[ReferencedGame.Pixels[x, y].OwnerId].WarSide.HasValue)
+                                    {
+                                        ReferencedGame.Pixels[x, y].OccupierId = d1.ViewModel.NationColors[c];
+                                    }
+
                                     ReferencedGame.Pixels[x, y].OwnerId = d1.ViewModel.NationColors[c];
                                 }
                             }
                         }
+                        ReferencedGame.CheckForCollapse();
+                        ReferencedGame.CleanFronts();
+                        ReferencedGame.GenerateNationLabels();
                         UpdateMapAsync();
                         ReferencedGame.Backup();
                     });

@@ -51,6 +51,7 @@ namespace Mapperdom.ViewModels
             }
         }
 
+        /*
         public Visibility FeedbackLinkVisibility => Microsoft.Services.Store.Engagement.StoreServicesFeedbackLauncher.IsSupported() ? Visibility.Visible : Visibility.Collapsed;
 
         private ICommand _launchFeedbackHubCommand;
@@ -73,7 +74,7 @@ namespace Mapperdom.ViewModels
                 return _launchFeedbackHubCommand;
             }
         }
-
+        */
         public SettingsViewModel()
         {
         }
