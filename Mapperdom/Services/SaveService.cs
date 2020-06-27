@@ -54,39 +54,59 @@ namespace Mapperdom.Services
             {
                 using (ZipArchive zipArchive = new ZipArchive(fileStream, ZipArchiveMode.Update))
                 {
+                    for (int i = zipArchive.Entries.Count - 1; i >= 0; i--) zipArchive.Entries[i].Delete();
+
 
                     ZipArchiveEntry entry = zipArchive.CreateEntry("map.png");
 
 
                     using (Stream pngStream = entry.Open())
                     {
-                        byte[] inMemory = new byte[pngStream.Length];
-                        pngStream.Read(inMemory, 0, inMemory.Length);
+
 
                         using (InMemoryRandomAccessStream ms = new InMemoryRandomAccessStream())
                         {
-                            await ms.ReadAsync(inMemory.AsBuffer(), (uint)inMemory.Length, InputStreamOptions.None);
-
                             BitmapEncoder encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.PngEncoderId, ms);
                             Stream pixelStream = map.baseImage.PixelBuffer.AsStream();
                             byte[] Pixels = new byte[pixelStream.Length];
                             await pixelStream.ReadAsync(Pixels, 0, Pixels.Length);
                             encoder.SetPixelData(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Ignore, (uint)map.baseImage.PixelWidth, (uint)map.baseImage.PixelHeight, 96.0, 96.0, Pixels);
                             await encoder.FlushAsync();
+
+                            IBuffer data = (new byte[ms.Size]).AsBuffer();
+
+                            ms.Seek(0);
+                            await ms.ReadAsync(data, (uint)ms.Size, InputStreamOptions.None);
+
+                            pngStream.SetLength(data.ToArray().Length);
+
+                            await pngStream.WriteAsync(data.ToArray(), 0, (int)pngStream.Length);
+                            await pngStream.FlushAsync();
                         }
+
                     }
 
                     entry = zipArchive.CreateEntry("state.json");
 
                     using (Stream stateStream = entry.Open())
                     {
-                        using (DataWriter dataWriter = new DataWriter(stateStream.AsOutputStream()))
-                        {
-                            dataWriter.WriteString(await Json.StringifyAsync(state));
-                            await dataWriter.FlushAsync();
-                        }
+                        byte[] data = Encoding.Unicode.GetBytes(await Json.StringifyAsync(state));
+
+                        stateStream.SetLength(data.Length);
+                        await stateStream.WriteAsync(data, 0, data.Length);
+                        await stateStream.FlushAsync();
                     }
 
+                    entry = zipArchive.CreateEntry("pixels.bin");
+
+                    using (Stream stateStream = entry.Open())
+                    {
+                        byte[] data = (new CerasSerializer(GetConfig())).Serialize(state.Pixels);
+
+                        stateStream.SetLength(data.Length);
+                        await stateStream.WriteAsync(data, 0, data.Length);
+                        await stateStream.FlushAsync();
+                    }
                 }
             }
         }
@@ -126,29 +146,82 @@ namespace Mapperdom.Services
 
                     using (Stream pngStream = entry.Open())
                     {
-                        BitmapDecoder decoder = await BitmapDecoder.CreateAsync(BitmapDecoder.PngDecoderId, pngStream.AsRandomAccessStream());
 
-                        using (SoftwareBitmap swbmp = await decoder.GetSoftwareBitmapAsync())
+                        using (InMemoryRandomAccessStream ms = new InMemoryRandomAccessStream())
                         {
-                            bmp = new WriteableBitmap(swbmp.PixelWidth, swbmp.PixelHeight);
-                            swbmp.CopyToBuffer(bmp.PixelBuffer);
+                            byte[] readBuffer = new byte[4096];
 
+                            int bytesRead;
 
-                        }
-
-                        entry = zipArchive.GetEntry("state.json");
-
-                        if (entry == null) return null;
-
-                        using (Stream stateStream = entry.Open())
-                        {
-                            using (DataReader dataReader = new DataReader(stateStream.AsInputStream()))
+                            while ((bytesRead = pngStream.Read(readBuffer, 0, 4096)) > 0)
                             {
-                                uint numBytesLoaded = await dataReader.LoadAsync((uint)stateStream.Length);
-                                state = await Json.ToObjectAsync<MapState>(dataReader.ReadString(numBytesLoaded));
+                                byte[] b = new byte[bytesRead];
+
+                                Array.Copy(readBuffer, b, bytesRead);
+
+                                await ms.WriteAsync(b.AsBuffer());
+                            }
+
+
+                            BitmapDecoder decoder = await BitmapDecoder.CreateAsync(BitmapDecoder.PngDecoderId, ms);
+
+                            using (SoftwareBitmap swbmp = await decoder.GetSoftwareBitmapAsync())
+                            {
+                                bmp = new WriteableBitmap(swbmp.PixelWidth, swbmp.PixelHeight);
+                                swbmp.CopyToBuffer(bmp.PixelBuffer);
                             }
                         }
 
+                            
+
+                    }
+
+                    entry = zipArchive.GetEntry("state.json");
+
+                    if (entry == null) return null;
+
+                    using (Stream stateStream = entry.Open())
+                    {
+                        byte[] readBuffer = new byte[4096];
+
+                        int bytesRead;
+
+                        MemoryStream ms = new MemoryStream();
+
+                        while ((bytesRead = stateStream.Read(readBuffer, 0, 4096)) > 0)
+                        {
+                            byte[] b = new byte[bytesRead];
+
+                            Array.Copy(readBuffer, b, bytesRead);
+
+                            await ms.WriteAsync(b, 0, bytesRead);
+                        }
+
+                        state = await Json.ToObjectAsync<MapState>(Encoding.Unicode.GetString(ms.ToArray()));
+                    }
+
+                    entry = zipArchive.GetEntry("pixels.bin");
+
+                    if (entry == null) return null;
+
+                    using (Stream stateStream = entry.Open())
+                    {
+                        byte[] readBuffer = new byte[4096];
+
+                        int bytesRead;
+
+                        MemoryStream ms = new MemoryStream();
+
+                        while ((bytesRead = stateStream.Read(readBuffer, 0, 4096)) > 0)
+                        {
+                            byte[] b = new byte[bytesRead];
+
+                            Array.Copy(readBuffer, b, bytesRead);
+
+                            await ms.WriteAsync(b, 0, bytesRead);
+                        }
+
+                        state.Pixels = (new CerasSerializer(GetConfig())).Deserialize<PixelData[,]>(ms.ToArray());
                     }
                 }
 

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -10,6 +11,7 @@ namespace Mapperdom.Models
     public struct MapState
     {
 
+        [JsonIgnore]
         public PixelData[,] Pixels;
 
         public Dictionary<UnorderedBytePair, sbyte> Fronts;
